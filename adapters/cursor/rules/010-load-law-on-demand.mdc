@@ -1,0 +1,22 @@
+---
+description: Load a specific engineering law when the task matches its condition. Use when fixing a bug, writing tests, mutating git, touching lifecycle or concurrency, crossing an external boundary, creating a package, or closing a block as done.
+alwaysApply: false
+---
+
+Resolve the right law file from `agent-laws/laws/INDEX.md`, then read it before implementing.
+
+Fast routing:
+
+| Task | Law file |
+|---|---|
+| Fixing a bug or adding an instance-keyed branch | `agent-laws/laws/attack-root-class.md` |
+| Any git mutation | `agent-laws/laws/git-safety.md` |
+| Writing tests | `agent-laws/laws/kiss-tests.md` |
+| Claiming something is validated | `agent-laws/laws/validation-honesty.md` |
+| Lifecycle, jobs, locks, visible progress | `agent-laws/laws/lifecycle-concurrency.md` |
+| Third-party APIs and versions | `agent-laws/laws/pinned-version-websearch.md` |
+| Multi-file spec-driven change | `agent-laws/laws/scope-discipline.md` |
+| Closing a block as done | `agent-laws/laws/post-block-reflection.md` |
+
+For anything not listed, read `agent-laws/laws/INDEX.md` and match on `when_to_load`.
+Read one law, not all of them.

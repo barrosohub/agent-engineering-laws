@@ -1,0 +1,18 @@
+---
+description: Always-on pointer to the universal engineering laws
+alwaysApply: true
+---
+
+Follow the operating laws in `AGENTS.md` at the repository root. Read it before planning or
+editing. It is the single source of truth for engineering policy in this repository.
+
+Do not restate or duplicate its content here.
+
+`AGENTS.md` contains an "External law loading" table. When the task in front of you matches a
+row, read that law file before implementing. Do not preload all laws.
+
+Non-negotiable, restated here only because they are irreversible:
+
+- Never mutate git state (add, commit, push, reset, stash, rebase, merge) without an explicit
+  per-operation imperative from the user. Questions are not authorization.
+- Never claim validation from a test that short-circuits before the new code path.

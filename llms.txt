@@ -1,0 +1,69 @@
+# agent-engineering-laws
+
+> Universal operating laws for coding agents: 33 timeless, vendor-neutral engineering laws
+> distributed as a short always-on file plus lazy-loaded law files. Install into any
+> repository, on any stack, for any agent that can read a file and follow an instruction.
+
+Canonical instruction file: `AGENTS.md` (the open cross-tool convention). Everything else in
+the repository points at it and never copies it.
+
+**Reading protocol.** Fetch `core/ALWAYS.md` first — it is the whole operating core and
+carries the load table. Fetch an individual law only when the task at hand matches its
+condition below. Do not fetch all 33; that defeats the design.
+
+**Raw base URL.** `https://raw.githubusercontent.com/OWNER/REPO/main/`
+Replace `OWNER/REPO` with the real coordinates. Every path below is relative to that base.
+
+## Entry points
+
+- [core/ALWAYS.md](https://raw.githubusercontent.com/OWNER/REPO/main/core/ALWAYS.md): the always-on file. Install as `./AGENTS.md` in the target repository. ~180 lines: operating core, the mandatory load table, and the project-context stub.
+- [laws/INDEX.md](https://raw.githubusercontent.com/OWNER/REPO/main/laws/INDEX.md): `id | title | path | when_to_load` for all 33 laws. The routing table.
+- [INSTALL.md](https://raw.githubusercontent.com/OWNER/REPO/main/INSTALL.md): paste-ready imperative install prompt for any coding agent, plus curl / script / subtree / submodule fallbacks.
+- [README.md](https://raw.githubusercontent.com/OWNER/REPO/main/README.md): mission, design principles, compatibility matrix, gate description.
+- [MAINTENANCE.md](https://raw.githubusercontent.com/OWNER/REPO/main/MAINTENANCE.md): the self-maintenance protocol — constitution, maintenance cycle, admission and retirement tests, terminology-drift protocol, failure modes of autonomous maintenance.
+
+## Laws
+
+Path form: `laws/<id>.md`. Load one when you are about to do the thing described.
+
+- [attack-root-class](https://raw.githubusercontent.com/OWNER/REPO/main/laws/attack-root-class.md): fixing a bug, or adding a keyword/regex/branch/allowlist keyed to an observed instance.
+- [never-parallel-contract](https://raw.githubusercontent.com/OWNER/REPO/main/laws/never-parallel-contract.md): adding a second code path, second writer, wrapper, or harness over existing behavior.
+- [domain-canonical-sources](https://raw.githubusercontent.com/OWNER/REPO/main/laws/domain-canonical-sources.md): writing domain prose, catalogs, or knowledge-carrying prompts.
+- [validation-honesty](https://raw.githubusercontent.com/OWNER/REPO/main/laws/validation-honesty.md): claiming a change is validated, or running a measurement battery.
+- [kiss-tests](https://raw.githubusercontent.com/OWNER/REPO/main/laws/kiss-tests.md): creating or expanding tests.
+- [drift-documentation](https://raw.githubusercontent.com/OWNER/REPO/main/laws/drift-documentation.md): two authoritative surfaces disagree and you do not own the decision.
+- [mechanical-guardrails](https://raw.githubusercontent.com/OWNER/REPO/main/laws/mechanical-guardrails.md): introducing a durable rule that is searchable or AST-testable.
+- [prefer-executable-contract](https://raw.githubusercontent.com/OWNER/REPO/main/laws/prefer-executable-contract.md): about to version new prose to protect a contract.
+- [reuse-and-placement](https://raw.githubusercontent.com/OWNER/REPO/main/laws/reuse-and-placement.md): introducing shared helpers or primitives; deciding where code lives.
+- [scope-discipline](https://raw.githubusercontent.com/OWNER/REPO/main/laws/scope-discipline.md): executing a spec-driven or multi-file change.
+- [legacy-state-tolerance](https://raw.githubusercontent.com/OWNER/REPO/main/laws/legacy-state-tolerance.md): validating or migrating persisted legacy state.
+- [new-package-fence](https://raw.githubusercontent.com/OWNER/REPO/main/laws/new-package-fence.md): creating a new production package, module, or namespace.
+- [multi-axis-invariants](https://raw.githubusercontent.com/OWNER/REPO/main/laws/multi-axis-invariants.md): protecting a migration or refactor with a numeric invariant.
+- [external-boundary](https://raw.githubusercontent.com/OWNER/REPO/main/laws/external-boundary.md): shipping a slice that talks to the external world.
+- [new-legacy-boundary](https://raw.githubusercontent.com/OWNER/REPO/main/laws/new-legacy-boundary.md): cutting a new system over beside a legacy one.
+- [adapter-chain](https://raw.githubusercontent.com/OWNER/REPO/main/laws/adapter-chain.md): adding a parameter across caller, interface, adapter, and core.
+- [no-second-model](https://raw.githubusercontent.com/OWNER/REPO/main/laws/no-second-model.md): adding a model stage that reviews, repairs, or reconciles another model's output.
+- [git-safety](https://raw.githubusercontent.com/OWNER/REPO/main/laws/git-safety.md): any git mutation, or creating pull requests and releases.
+- [questions-are-not-commands](https://raw.githubusercontent.com/OWNER/REPO/main/laws/questions-are-not-commands.md): judging whether the user authorized an irreversible action.
+- [lifecycle-concurrency](https://raw.githubusercontent.com/OWNER/REPO/main/laws/lifecycle-concurrency.md): touching lifecycle, background jobs, locks, sessions, or visible progress.
+- [observability-and-routing](https://raw.githubusercontent.com/OWNER/REPO/main/laws/observability-and-routing.md): fixing a pipeline, classifying requests, or emitting identity-bound values.
+- [io-boundary](https://raw.githubusercontent.com/OWNER/REPO/main/laws/io-boundary.md): consuming external or untrusted data.
+- [hermetic-artifacts](https://raw.githubusercontent.com/OWNER/REPO/main/laws/hermetic-artifacts.md): adding versioned inputs, renaming a doc contract, or sanitizing examples.
+- [debugging](https://raw.githubusercontent.com/OWNER/REPO/main/laws/debugging.md): diagnosing a bug, a regression, or a suspicious match count.
+- [pinned-version-websearch](https://raw.githubusercontent.com/OWNER/REPO/main/laws/pinned-version-websearch.md): using third-party APIs or libraries, or asserting a vendor fact.
+- [external-failure-messages](https://raw.githubusercontent.com/OWNER/REPO/main/laws/external-failure-messages.md): writing user-facing messages about failed external dependencies.
+- [operational-evidence](https://raw.githubusercontent.com/OWNER/REPO/main/laws/operational-evidence.md): claiming operational validation, closing work items, reporting residual risk.
+- [reviewer-auto-gate](https://raw.githubusercontent.com/OWNER/REPO/main/laws/reviewer-auto-gate.md): acting as reviewer or second reader, or receiving a reviewer request.
+- [verify-live-file](https://raw.githubusercontent.com/OWNER/REPO/main/laws/verify-live-file.md): accusing a docs or convention violation.
+- [post-block-reflection](https://raw.githubusercontent.com/OWNER/REPO/main/laws/post-block-reflection.md): closing an implementation block as done.
+- [rule-authoring](https://raw.githubusercontent.com/OWNER/REPO/main/laws/rule-authoring.md): authoring or editing agent rule files.
+- [long-term-memory](https://raw.githubusercontent.com/OWNER/REPO/main/laws/long-term-memory.md): storing a durable lesson for future sessions.
+- [engineering-hygiene](https://raw.githubusercontent.com/OWNER/REPO/main/laws/engineering-hygiene.md): writing comments, deleting code, or claiming backward compatibility.
+
+## Optional
+
+- [AGENTS.md](https://raw.githubusercontent.com/OWNER/REPO/main/AGENTS.md): rules for agents editing this repository itself. Not part of the distributed corpus.
+- [templates/project-context.stub.md](https://raw.githubusercontent.com/OWNER/REPO/main/templates/project-context.stub.md): the only section a consuming repository fills in.
+- [adapters/github/copilot-instructions.md](https://raw.githubusercontent.com/OWNER/REPO/main/adapters/github/copilot-instructions.md): pointer adapter. Cursor and Claude equivalents live beside it.
+- [VERSION](https://raw.githubusercontent.com/OWNER/REPO/main/VERSION): semver of the law corpus.
+- [CHANGELOG.md](https://raw.githubusercontent.com/OWNER/REPO/main/CHANGELOG.md): what changed, what forced it, and what was verified how.
