@@ -15,8 +15,8 @@ first and tell the agent to copy from that local path instead of fetching.
 
 ```text
 You are installing a set of universal engineering laws into THIS repository.
-Source repository: https://github.com/OWNER/REPO  (raw base:
-https://raw.githubusercontent.com/OWNER/REPO/main/)
+Source repository: https://github.com/barrosohub/agent-engineering-laws  (raw base:
+https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/)
 
 Execute these steps in order. Report what you did at the end. Do not skip step 8.
 
@@ -36,13 +36,15 @@ Execute these steps in order. Report what you did at the end. Do not skip step 8
      every row of the table plus the `INDEX.md` paths to match. The table MUST resolve.
 
 3) CLAUDE COMPATIBILITY
-   - Create `./CLAUDE.md` as a symlink to `AGENTS.md`:
-       ln -s AGENTS.md CLAUDE.md
-   - If symlinks are unavailable (Windows without developer mode, some sandboxes) or
-     `./CLAUDE.md` already exists with Claude-only content: do NOT delete anything.
-     PREPEND a first line containing exactly:
+   - Create `./CLAUDE.md` whose first line is exactly:
        @AGENTS.md
-     and keep the existing content below it.
+     That import form is the primary pointer — it works on every OS, including Windows
+     where symlinks need Developer Mode or an Administrator shell.
+   - Optionally, on Unix, a symlink (`ln -s AGENTS.md CLAUDE.md`) is also fine if you
+     prefer it; never do both as competing copies of the corpus.
+   - If `./CLAUDE.md` already exists with Claude-only content: do NOT delete anything.
+     PREPEND a first line containing exactly `@AGENTS.md` and keep the existing content
+     below it.
    - Never duplicate the law corpus into `CLAUDE.md`. One source of truth.
 
 4) DO NOT CREATE ANY OTHER TOOL-SPECIFIC MEMORY FILE
@@ -78,40 +80,48 @@ Execute these steps in order. Report what you did at the end. Do not skip step 8
 
 ## Fallbacks
 
-### Direct fetch (no agent)
+The agent-driven path above is shell-agnostic and is the recommended route on Windows
+(cmd or PowerShell). The snippets below are for environments that already have a Unix
+shell (bash, Git Bash, WSL, macOS Terminal).
+
+### Direct fetch (Unix shell — bash, Git Bash, WSL, macOS)
 
 ```sh
-# always-on file
-curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/core/ALWAYS.md -o AGENTS.md
-ln -s AGENTS.md CLAUDE.md
+# always-on file (requires real curl, not the PowerShell 5.1 curl alias)
+curl -fsSL https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/core/ALWAYS.md -o AGENTS.md
+printf '@AGENTS.md\n' > CLAUDE.md
+# optional on Unix only: ln -s AGENTS.md CLAUDE.md
 
 # law corpus (needs the repo listing; simplest is a shallow clone, see below)
 ```
 
-### Shallow clone + script
+PowerShell 5.1 note: `curl` there is `Invoke-WebRequest` and rejects `-fsSL`. Prefer the
+agent-driven install, or use `curl.exe` explicitly if a real curl is on PATH.
+
+### Shallow clone + script (bash / Git Bash / WSL / macOS)
 
 ```sh
-git clone --depth 1 https://github.com/OWNER/REPO /tmp/agent-engineering-laws
+git clone --depth 1 https://github.com/barrosohub/agent-engineering-laws /tmp/agent-engineering-laws
 /tmp/agent-engineering-laws/scripts/install.sh --target .
 ```
 
 `scripts/install.sh` refuses to overwrite an existing `AGENTS.md` without `--force`, and
-prints a diff first. It never creates a Gemini instruction file.
+prints a diff first. It never creates a Gemini instruction file. Requires a POSIX `sh`.
 
-### git subtree (vendored, updatable)
+### git subtree (vendored, updatable; any git)
 
 ```sh
-git subtree add --prefix agent-laws https://github.com/OWNER/REPO main --squash
+git subtree add --prefix agent-laws https://github.com/barrosohub/agent-engineering-laws main --squash
 # later
-git subtree pull --prefix agent-laws https://github.com/OWNER/REPO main --squash
+git subtree pull --prefix agent-laws https://github.com/barrosohub/agent-engineering-laws main --squash
 ```
 
 Then point the lazy-load table at `agent-laws/laws/`.
 
-### git submodule (pinned to a commit)
+### git submodule (pinned to a commit; any git)
 
 ```sh
-git submodule add https://github.com/OWNER/REPO agent-laws
+git submodule add https://github.com/barrosohub/agent-engineering-laws agent-laws
 git submodule update --init --recursive
 ```
 
@@ -123,7 +133,7 @@ until you bump the pointer.
 ## Verifying the install
 
 1. `./AGENTS.md` exists and its "External law loading" table paths all resolve on disk.
-2. `./CLAUDE.md` is a symlink to `AGENTS.md`, or its first line is `@AGENTS.md`.
+2. `./CLAUDE.md` starts with `@AGENTS.md` (or, on Unix, is a symlink to `AGENTS.md`).
 3. `./agent-laws/laws/INDEX.md` exists and every path it lists exists.
 4. The `## Project context` section contains verified facts or explicit `TODO`s — no guesses.
 5. Ask your agent: *"which law file covers git mutations?"* It should answer

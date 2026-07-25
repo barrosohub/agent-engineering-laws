@@ -1,9 +1,3 @@
----
-description: Pointer to the universal engineering laws
-paths:
-  - "**/*"
----
-
 The operating laws for this repository live in `AGENTS.md` at the root, which `CLAUDE.md`
 imports. Read it before planning or editing.
 

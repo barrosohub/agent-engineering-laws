@@ -2,9 +2,6 @@
 
 **Universal operating laws for coding agents.**
 
-> Leis universais de engenharia para agents de codificação. Canônico em `AGENTS.md`,
-> instalável em qualquer repositório, sem acoplamento a vendor, stack ou época.
-
 A curated corpus of **33 durable engineering laws** — written as imperatives, free of any
 product, vendor, language, or era — that a coding agent loads into whatever repository it is
 working in. Install once, and the agent stops making a specific, well-known class of
@@ -34,12 +31,13 @@ Open your coding agent **inside the repository you want to protect** and paste t
 No agent? Same result:
 
 ```sh
-git clone --depth 1 https://github.com/OWNER/REPO /tmp/laws
+git clone --depth 1 https://github.com/barrosohub/agent-engineering-laws /tmp/laws
 /tmp/laws/scripts/install.sh --target .
 ```
 
-Both paths write `./AGENTS.md`, copy `laws/` into `./agent-laws/laws/`, link `CLAUDE.md`, and
-stop before touching git. Nothing is committed on your behalf.
+Both paths write `./AGENTS.md`, copy `laws/` into `./agent-laws/laws/`, create `CLAUDE.md`
+as an `@AGENTS.md` import (or a symlink on Unix), and stop before touching git. Nothing is
+committed on your behalf.
 
 ---
 
@@ -158,7 +156,7 @@ corpus — each with its counter.
 
 | Script | Role | Blocks? |
 |---|---|---|
-| `scripts/check-laws.sh` | 16 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
+| `scripts/check-laws.sh` | 23 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
 | `scripts/selftest-gate.sh` | Proves every rule fires on its own violation, and that none fire on a clean corpus | **yes** |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
@@ -222,3 +220,4 @@ Informed by, not copied from: <https://agents.md/> ·
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
+

@@ -32,17 +32,21 @@ unsupervised maintenance. Assume you are the only maintainer.
    loaded on demand. Never build a thousand-line always-on monolith.
 2. **One law, one file, one stable id.** Ids are kebab-case and are a contract. Renaming an
    id is a breaking change: major version bump plus an old→new mapping in `CHANGELOG.md`.
-3. **Every corpus change touches four files.** The law file, `laws/INDEX.md`, the lazy-load
-   table in `core/ALWAYS.md`, and `CHANGELOG.md` — plus `VERSION` when the release warrants
-   it. A law that is not in both the index and the table is invisible in practice.
+3. **Every corpus change touches the full routing surface.** The law file, `laws/INDEX.md`,
+   the lazy-load table in `core/ALWAYS.md`, `llms.txt`, the README group table,
+   `CHANGELOG.md`, and every live law-count literal — plus `VERSION` when the release
+   warrants it. `llms-txt-complete`, `readme-groups-complete`, and `law-count-consistent`
+   enforce the non-index surfaces mechanically. A law absent from any of them is invisible
+   or silently wrong.
 4. **Do not add a Gemini-specific instruction file.** Out of scope by decision. Gemini users
    point their own configuration at `AGENTS.md`.
 5. **Do not couple to vendors.** No proprietary memory products, no crawl or search vendors,
    no per-user home paths, no absolute machine paths, no personal names, no mandatory skill
    packs, no product-specific stacks. Say "long-term memory", not a product name. Say "call
    a WebSearch tool", not a vendor.
-6. **`CLAUDE.md` stays a pointer.** A symlink to `AGENTS.md`, or a single `@AGENTS.md` line.
-   Never a copy of the corpus.
+6. **`CLAUDE.md` stays a pointer.** Prefer a single `@AGENTS.md` import line (works on every
+   OS, including Windows without Developer Mode). A symlink to `AGENTS.md` is an optional
+   Unix convenience. Never a copy of the corpus.
 7. **Adapters translate location, not content.** A Cursor rule or Copilot instruction file
    says *where to read*, plus at most the irreversible-action rules restated. It never
    inlines law text.
@@ -50,7 +54,10 @@ unsupervised maintenance. Assume you are the only maintainer.
    The corpus must survive being installed under any directory layout.
 9. **Nothing in a law may date it.** No years, no version literals, no era words, no URLs.
    Enforced by the `temporal-coupling` and `url-in-law` rules.
-10. **Run both gates.** `scripts/check-laws.sh && scripts/selftest-gate.sh` must both exit 0
+10. **American English only.** Every file in this repository is written in American English.
+    Enforced for accented prose by `english-only`; unaccented non-English stays a human
+    review concern.
+11. **Run both gates.** `scripts/check-laws.sh && scripts/selftest-gate.sh` must both exit 0
     before you call anything done. Then read `scripts/audit-corpus.sh`, which is advisory.
 
 ## Writing a law
@@ -77,7 +84,8 @@ unsupervised maintenance. Assume you are the only maintainer.
 4. Add a row to the "External law loading" table in `core/ALWAYS.md`. If the law is
    irreducible, also add one condensed line to the relevant core section — but prefer the
    table.
-5. Update the law-count references (`laws/INDEX.md` footer, `README.md`) and `CHANGELOG.md`.
+5. Update `llms.txt`, the README group table, every live law-count literal
+   (`laws/INDEX.md` footer, `README.md`, this file, `llms.txt`), and `CHANGELOG.md`.
 6. Bump `VERSION`: minor for a new law, patch for clarifications, major for id changes.
 7. Run `scripts/check-laws.sh`.
 
@@ -92,14 +100,16 @@ unsupervised maintenance. Assume you are the only maintainer.
 
 | Script | Role | Blocks |
 |---|---|---|
-| `scripts/check-laws.sh` | 16 registered rules; findings print as `FAIL [rule-id] location — reason` | yes |
+| `scripts/check-laws.sh` | 23 registered rules; findings print as `FAIL [rule-id] location — reason` | yes |
 | `scripts/selftest-gate.sh` | Proves each rule fires on its own violation, and none fire on a clean corpus | yes |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
 Rules cover: index integrity, front-matter ids, H1 titles, duplicate titles, law size floor
 and ceiling, load-table completeness and resolution, cross-reference resolution, location
 coupling, always-on size budget, environment coupling, temporal coupling, URLs in laws,
-compatibility-file shape, and gate self-coverage.
+compatibility-file shape, gate self-coverage, `llms.txt` bijection, README group-table
+bijection, live law-count consistency, unresolved coordinate placeholders, tooling shell
+purity (POSIX `sh` + bash 3.2), American-English orthography, and product-tier inertness.
 
 `README.md`, `INSTALL.md`, `MAINTENANCE.md`, `CHANGELOG.md` and `scripts/` are excluded from
 the coupling scans on purpose: they must be able to NAME what is out of scope in order to
@@ -113,6 +123,18 @@ If the gate fails, decide which is wrong — the corpus or the gate — and say 
 change record. Never relocate content to dodge a scan, and never loosen a pattern to make a
 finding disappear. An over-matching rule is fixed with a more precise rule plus a twin case.
 
+## Compatibility tiers
+
+This repository has two tiers with different contracts:
+
+- **Product tier** (`core/`, `laws/`, `adapters/`, `templates/`, `llms.txt`, and the
+  installed `AGENTS.md` / `CLAUDE.md` pointers): executes nothing. It therefore works on
+  every OS and terminal, including Windows cmd and PowerShell. Enforced by
+  `product-tier-inert` and by documenting `@AGENTS.md` as the primary Claude pointer.
+- **Tooling tier** (`scripts/`): one implementation targeting bash 3.2 plus POSIX utilities
+  (Linux, macOS, WSL, BusyBox, Git Bash). Never a second per-platform implementation of the
+  same gate — that would be a parallel contract. Enforced by `posix-shell-purity`.
+
 ## Git
 
 The laws in this repository apply to work on this repository. In particular
@@ -124,14 +146,16 @@ readiness is not authorization.
 
 - **What this repository is:** a vendor-neutral corpus of 33 universal engineering laws for
   coding agents, distributed as an always-on file plus lazy-loaded law files.
-- **Stack:** Markdown and POSIX shell. No build, no dependencies, no lockfiles, no network.
-  Requires only bash, coreutils, grep, sed, awk.
+- **Stack:** Markdown and shell. Product tier executes nothing. Tooling tier requires bash
+  3.2+, POSIX coreutils, grep, sed, awk. No build, no dependencies, no lockfiles, no network.
 - **Quality gate:** `scripts/check-laws.sh && scripts/selftest-gate.sh`
 - **Advisory audit:** `scripts/audit-corpus.sh` (never blocks)
 - **Render distribution file:** `scripts/render-core.sh` (writes `dist/`, ignored)
 - **Install into a target repo:** `scripts/install.sh --target <path>`
 - **Locked decisions:** canonical file is `AGENTS.md`; Claude compatibility is a pointer
-  only; no Gemini instruction file; no vendor coupling; laws are written in English; laws
-  cite each other by id; laws carry no dates and no URLs.
+  (prefer `@AGENTS.md` import); no Gemini instruction file; no vendor coupling; American
+  English only; laws cite each other by id; laws carry no dates and no URLs; tooling is
+  never duplicated per platform.
 - **Non-goals:** tool-specific rule dialects beyond thin pointers; auto-generated laws;
-  project-specific or domain-specific guidance; any dependency that must be installed.
+  project-specific or domain-specific guidance; any dependency that must be installed;
+  a second per-platform implementation of the tooling tier.

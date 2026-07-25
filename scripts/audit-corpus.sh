@@ -10,12 +10,21 @@
 #
 # Usage: scripts/audit-corpus.sh
 # Always exits 0. If you want a failure, use check-laws.sh.
+# Targets: bash 3.2 + POSIX utilities (no mapfile, no declare -A).
 
 set -uo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT" || exit 0
 
-mapfile -t LAWS < <(find laws -maxdepth 1 -name '*.md' ! -name 'INDEX.md' | sort)
+LAWS=()
+_i=0
+while IFS= read -r _f; do
+  [ -n "$_f" ] || continue
+  LAWS[_i]=$_f
+  _i=$((_i + 1))
+done <<EOF
+$(find laws -maxdepth 1 -name '*.md' ! -name 'INDEX.md' | sort)
+EOF
 N=${#LAWS[@]}
 
 hdr() { printf '\n== %s ==\n' "$1"; }
@@ -37,8 +46,6 @@ for f in "${LAWS[@]}"; do
 done
 
 # --- routing usability --------------------------------------------------------
-# The load table is read by an agent on every task. Past a certain size, routing degrades
-# and agents start skipping it — the corpus becomes unreachable without being wrong.
 hdr "routing usability"
 ROWS=$(grep -cE '^\| .* \| `agent-laws/laws/' core/ALWAYS.md)
 inf "$ROWS routable rows in the load table"
@@ -47,7 +54,6 @@ DUP_TRIGGER=$(grep -oE '^\| [^|]+ \|' core/ALWAYS.md | sort | uniq -d)
 [ -n "$DUP_TRIGGER" ] && sig "two rows share a trigger phrase — an agent cannot route deterministically:" && printf '%s\n' "$DUP_TRIGGER" | sed 's/^/      /'
 
 # --- overlap signal -----------------------------------------------------------
-# Shared rare vocabulary between two laws suggests they may own the same contract.
 hdr "possible overlap (shared distinctive vocabulary)"
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 for f in "${LAWS[@]}"; do
@@ -68,8 +74,6 @@ done
 [ "$found" -eq 0 ] && inf "no pair exceeds the overlap threshold"
 
 # --- vocabulary drift ---------------------------------------------------------
-# Brand-shaped tokens are how a timeless corpus quietly becomes an era's corpus.
-# Reported, never blocked: legitimate technical terms share this shape.
 hdr "vocabulary drift (brand-shaped tokens)"
 BRANDS=$(grep -ohE '\b[A-Z][a-z]+[A-Z][A-Za-z]+\b' "${LAWS[@]}" | sort | uniq -c | sort -rn)
 if [ -n "$BRANDS" ]; then
@@ -78,13 +82,10 @@ if [ -n "$BRANDS" ]; then
 else
   inf "no brand-shaped tokens found"
 fi
-# A real acronym never appears in lowercase form anywhere in the corpus; an ordinary word
-# shouted for emphasis (NEVER, ONLY, BEFORE) does. Derive the distinction instead of
-# curating a word list — a curated list would be the name-keyed short blanket law
-# `attack-root-class` forbids.
 LOWER=$(cat "${LAWS[@]}" | tr '[:upper:]' '[:lower:]' | grep -oE '\b[a-z]{3,}\b' | sort -u)
 ACRONYM=$(for t in $(grep -ohE '\b[A-Z]{3,}\b' "${LAWS[@]}" | sort -u); do
-            grep -qx "$(tr '[:upper:]' '[:lower:]' <<< "$t")" <<< "$LOWER" || printf '%s ' "$t"
+            low=$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')
+            printf '%s\n' "$LOWER" | grep -qx "$low" || printf '%s ' "$t"
           done)
 if [ -n "$ACRONYM" ]; then
   sig "acronyms that appear only in upper case — will these read in another era?"
@@ -92,26 +93,27 @@ if [ -n "$ACRONYM" ]; then
 fi
 
 # --- imperative density -------------------------------------------------------
-# Laws are imperatives. Observation-heavy prose is the first stage of a law going soft.
-# Measured against PROSE lines only — blank lines, headings and front matter carry no
-# imperative by construction, and counting them makes every healthy law look soft.
-# The threshold is derived from the corpus itself, never hardcoded: a fixed number would be
-# an arbitrary constant that ages badly and gets tuned until it stops firing. A law is
-# flagged only when it is a real outlier — under half the corpus mean.
+# Density stored as path=pct lines (no declare -A — bash 4 only).
 hdr "imperative density (share of prose lines carrying a directive)"
-declare -A DENSITY; total_pct=0
+density_file=$tmp/density
+: > "$density_file"
+total_pct=0
 for f in "${LAWS[@]}"; do
   prose=$(grep -cvE '^\s*$|^#|^---|^[a-z_]+:|^\|' "$f")
   [ "$prose" -gt 0 ] || continue
   imp=$(grep -cE '\b(MUST|NEVER|SHOULD|Never|Always|Do NOT|Prefer|Use|Keep|Fix|Add|Ship|Assert|Verify|Report|Stop|Wait|Delete|Avoid|Treat|Name|State|Include|Run|Read|Write|Reject|forbidden|required|do not|never|always|prefer)\b' "$f")
-  DENSITY[$f]=$((imp * 100 / prose)); total_pct=$((total_pct + DENSITY[$f]))
+  pct=$((imp * 100 / prose))
+  printf '%s\t%s\n' "$f" "$pct" >> "$density_file"
+  total_pct=$((total_pct + pct))
 done
 MEAN=$((total_pct / N)); FLOOR=$((MEAN / 2))
 inf "corpus mean ${MEAN}% — flagging outliers below ${FLOOR}%"
 soft=0
 for f in "${LAWS[@]}"; do
-  if [ "${DENSITY[$f]:-100}" -lt "$FLOOR" ]; then
-    sig "$f — ${DENSITY[$f]}% directive, far below the corpus; is it still a law or now an essay?"
+  pct=$(awk -F'\t' -v f="$f" '$1 == f { print $2; exit }' "$density_file")
+  pct=${pct:-100}
+  if [ "$pct" -lt "$FLOOR" ]; then
+    sig "$f — ${pct}% directive, far below the corpus; is it still a law or now an essay?"
     soft=1
   fi
 done

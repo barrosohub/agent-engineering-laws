@@ -16,6 +16,61 @@ Law ids are a contract. Do not rename one without a major bump and a mapping ent
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-25
+
+Theme: close the unguarded parallel writers and make the published coordinates real.
+
+### Fixed
+
+- Claude adapter rules under `adapters/claude/rules/` no longer carry a `paths: ["**/*"]`
+  frontmatter block. With `paths` set, Claude Code treated them as path-conditional and only
+  loaded them after a matching file read — so the git-safety pointer was absent at session
+  start. Frontmatter removed; body unchanged. Cursor `.mdc` frontmatter left alone.
+- `scripts/render-core.sh` no longer uses bash-only `${var//…}` while declaring `sh`.
+  JSON escaping is POSIX `sed`. Verified under busybox `sh`.
+- Selftest harness nondeterminism: `subject()` keyed scratch dirs by rule id alone, so seven
+  posix cases shared one path and raced `rm -rf`/re-extract; mutations discarded exit status,
+  so a no-op mutation looked like a dead rule. Each case/twin now gets a unique scratch dir;
+  fingerprints before/after prove the mutation landed; unchanged trees report `BROKEN CASE`,
+  not `DEAD RULE`; extraction failure aborts loudly.
+- Gate-rule holes closed: per-construct posix red-cases; real over-match twins; 
+  `no-placeholder-coordinates` scans `scripts/` (needle assembled at runtime);
+  `law-count-consistent` uses number-then-`laws` adjacency; README group table guarded.
+- Tooling portability: replaced `mapfile` and `declare -A` with bash-3.2-portable loops;
+  replaced GNU `sed -i` in selftest mutations with `sed … > tmp && mv`; extended
+  `posix-shell-purity` to forbid bash-4-only and GNU-only constructs in every script.
+- Product tier on Windows: `@AGENTS.md` is the primary Claude pointer; this repo's
+  `CLAUDE.md` converted from symlink to import; `INSTALL.md` demotes `ln -s` and labels
+  shell-specific fallbacks; `scripts/install.sh` writes the import by default.
+- Removed the Portuguese blockquote from `README.md` (American English only).
+
+### Added
+
+- Gate rules, 16 → 23:
+  - `llms-txt-complete`, `law-count-consistent`, `no-placeholder-coordinates`,
+    `posix-shell-purity` (extended), `readme-groups-complete`
+  - `english-only` — no non-ASCII letters outside an explicit typographic allowlist
+    (em/en dash, arrows, ellipsis, middle dot, section sign, comparisons, box-drawing).
+    Catches accented prose; does not catch unaccented non-English.
+  - `product-tier-inert` — no symlinks and no executable bits under product-tier paths.
+- `.gitattributes` normalizing the working tree to LF (CRLF breaks shell scripts and
+  EOL-anchored gate patterns).
+
+### Changed
+
+- Published coordinates resolved to `barrosohub/agent-engineering-laws`.
+- `AGENTS.md` / `MAINTENANCE.md` record the two-tier compatibility contract and locked
+  decision: no second per-platform tooling implementation.
+- `llms.txt`: "Do not fetch all 33" → "Do not fetch all 33 laws".
+
+### Verified
+
+- `scripts/check-laws.sh`: 23 rules, 33 laws, exit 0.
+- `scripts/selftest-gate.sh`: five consecutive identical PASS runs; broken-case path proven.
+- `scripts/render-core.sh` under busybox `sh`: exit 0.
+- `git check-attr text eol` reports LF for scripts and docs.
+- Product-tier inert and english-only red-cases and twins live.
+
 ## [1.1.0] - 2026-07-25
 
 Theme: make the corpus survivable without a human maintainer, and make the gate prove itself.
@@ -112,6 +167,7 @@ Theme: make the corpus survivable without a human maintainer, and make the gate 
 - Laws are written in English, as imperatives, and must be understandable without reading
   the rest of the repository.
 
-[Unreleased]: https://github.com/OWNER/REPO/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/OWNER/REPO/releases/tag/v1.1.0
-[1.0.0]: https://github.com/OWNER/REPO/releases/tag/v1.0.0
+[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.0
+[1.1.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.1.0
+[1.0.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.0.0
