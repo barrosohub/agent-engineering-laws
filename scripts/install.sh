@@ -73,7 +73,8 @@ if [ "$LAWS_DIR" != "agent-laws/laws" ]; then
   info "rewrote lazy-load paths to $LAWS_DIR/"
 fi
 
-# 3) Claude compatibility -----------------------------------------------------
+# 3) Claude compatibility — @AGENTS.md import is primary (Windows-safe).
+#    A pre-existing symlink is left alone; we do not create new symlinks.
 CLAUDE="$TARGET/CLAUDE.md"
 if [ -L "$CLAUDE" ]; then
   info "CLAUDE.md symlink already present, left as is"
@@ -86,11 +87,9 @@ elif [ -f "$CLAUDE" ]; then
     mv "$CLAUDE.tmp" "$CLAUDE"
     info "prepended @AGENTS.md to existing CLAUDE.md (content preserved)"
   fi
-elif ln -s AGENTS.md "$CLAUDE" 2>/dev/null; then
-  info "linked CLAUDE.md -> AGENTS.md"
 else
   printf '@AGENTS.md\n' > "$CLAUDE"
-  info "symlink unavailable; wrote CLAUDE.md with @AGENTS.md import"
+  info "wrote CLAUDE.md with @AGENTS.md import"
 fi
 
 # 4) no other tool-specific instruction file is created. By design.

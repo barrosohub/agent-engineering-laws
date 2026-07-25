@@ -1,0 +1,3 @@
+# Normalize to LF in the working tree. CRLF breaks shell scripts and EOL-anchored gate patterns.
+* text=auto eol=lf
+*.sh text eol=lf

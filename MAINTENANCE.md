@@ -38,6 +38,9 @@ defect. Each is mechanically enforced where enforcement is possible.
 | C8 | Every gate rule has a red-case that proves it fires. | `selftest-coverage`, `selftest-gate.sh` |
 | C9 | Compatibility files are pointers, never copies of the corpus. | `claude-pointer` |
 | C10 | The repository runs from a clean clone with no network and no package manager. | §8 recovery drill |
+| C11 | Product tier executes nothing (no symlinks, no executable bits under product paths). | `product-tier-inert` |
+| C12 | Tooling targets bash 3.2 + POSIX utilities; never a second per-platform implementation. | `posix-shell-purity` |
+| C13 | The corpus is American English; accented non-ASCII letters are rejected. | `english-only` |
 
 **Amending the constitution.** An invariant may be changed only by a change that (a) states
 which invariant, (b) states what evidence forced it, (c) updates the enforcing rule *and* its
@@ -90,10 +93,17 @@ A corpus change is complete only when all of these are true:
 1. `laws/<id>.md` written or edited.
 2. `laws/INDEX.md` row added, edited, or removed.
 3. The load table in `core/ALWAYS.md` updated — a law absent from it is unreachable.
-4. Any new gate rule added to `GATE_RULES` in `scripts/check-laws.sh` **with** a matching
+4. `llms.txt` law entry added, edited, or removed — bijection with the index, enforced by
+   `llms-txt-complete`.
+5. The README group table updated when the law's group membership changes — enforced by
+   `readme-groups-complete` (exactly once per id).
+6. Every live law-count literal updated (`laws/INDEX.md` footer, `README.md`, `AGENTS.md`,
+   `llms.txt`) — enforced by `law-count-consistent`. Historical `CHANGELOG.md` counts of
+   past releases are not rewritten.
+7. Any new gate rule added to `GATE_RULES` in `scripts/check-laws.sh` **with** a matching
    `case_ <rule>` in `scripts/selftest-gate.sh`.
-5. `VERSION` bumped per §6.
-6. `CHANGELOG.md` entry written.
+8. `VERSION` bumped per §6.
+9. `CHANGELOG.md` entry written.
 
 ### RECORD — provenance
 
@@ -155,7 +165,8 @@ Retire a law when **any** is true:
 - It has been absorbed by another law and now only restates it.
 - It is unfalsifiable in practice — no observable action would violate it.
 
-**Retirement procedure.** Delete the file; remove its index row and load-table row; bump
+**Retirement procedure.** Delete the file; remove its index row, load-table row, and
+`llms.txt` entry; update the README group table and every live law-count literal; bump
 **major**; record the id in `CHANGELOG.md` under a `Retired` heading with the reason. Never
 silently reuse a retired id for a different rule — ids are permanent identifiers, and a
 consumer's tooling may still reference the old one.

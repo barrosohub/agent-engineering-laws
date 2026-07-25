@@ -1,9 +1,3 @@
----
-description: Git mutations require explicit per-operation authorization
-paths:
-  - "**/*"
----
-
 Before any operation that mutates the git index, working tree state, or history — staging,
 commit, amend, reset, revert, push, rebase, merge, cherry-pick, stash, clean, branch or tag
 deletion, discarding checkout, or PR/release creation via CLI — read

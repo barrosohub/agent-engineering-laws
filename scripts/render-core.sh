@@ -57,10 +57,13 @@ MANIFEST="$(dirname -- "$OUT")/laws.json"
     id=$(basename "$f" .md); [ "$id" = "INDEX" ] && continue
     title=$(awk 'NR==1&&$0=="---"{i=1;next} i&&/^title:/{sub(/^title:[[:space:]]*/,"");print;exit} i&&$0=="---"{exit}' "$f")
     when=$(grep -F "\`laws/$id.md\`" "$ROOT/laws/INDEX.md" | head -1 | awk -F' \\| ' '{gsub(/^[[:space:]]+|[[:space:]]+\|?$/,"",$4); print $4}')
+    # Escape for JSON string values. Backslash first, then quote — POSIX sed, no bashisms.
+    title_esc=$(printf '%s' "$title" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    when_esc=$(printf '%s' "$when" | sed 's/\\/\\\\/g; s/"/\\"/g')
     [ "$first" -eq 1 ] || printf ',\n'
     first=0
     printf '    {"id": "%s", "title": "%s", "path": "%s/%s.md", "when_to_load": "%s"}' \
-      "$id" "${title//\"/\\\"}" "$LAWS_DIR" "$id" "${when//\"/\\\"}"
+      "$id" "$title_esc" "$LAWS_DIR" "$id" "$when_esc"
   done
   printf '\n  ]\n}\n'
 } > "$MANIFEST"

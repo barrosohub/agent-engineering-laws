@@ -32,6 +32,8 @@ GATE_RULES=(
   law-size lazy-load-complete lazy-load-resolves xref-resolves location-coupling
   always-on-size banned-coupling temporal-coupling url-in-law claude-pointer
   selftest-coverage
+  llms-txt-complete law-count-consistent no-placeholder-coordinates posix-shell-purity
+  readme-groups-complete english-only product-tier-inert
 )
 GATE_RULES_META=(selftest-coverage)
 
@@ -51,11 +53,26 @@ summary() { [ "$FAILURES" -eq "$SECTION_MARK" ] && ok "$1" "$2"; return 0; }
 # Distributed corpus: the files a consumer installs. These must stay hermetic and
 # vendor-neutral. README.md, INSTALL.md, MAINTENANCE.md, CHANGELOG.md and scripts/ are
 # excluded by design — they must be able to NAME what is out of scope in order to forbid it.
-mapfile -t CORPUS < <(
-  find laws core templates adapters -type f \( -name '*.md' -o -name '*.mdc' \) 2>/dev/null | sort
-  printf 'AGENTS.md\n'
-)
-mapfile -t LAW_FILES < <(find laws -maxdepth 1 -name '*.md' ! -name 'INDEX.md' | sort)
+# Portable load (bash 3.2): no mapfile.
+CORPUS=()
+_i=0
+while IFS= read -r _f; do
+  [ -n "$_f" ] || continue
+  CORPUS[_i]=$_f
+  _i=$((_i + 1))
+done <<EOF
+$(find laws core templates adapters -type f \( -name '*.md' -o -name '*.mdc' \) 2>/dev/null | sort)
+AGENTS.md
+EOF
+LAW_FILES=()
+_i=0
+while IFS= read -r _f; do
+  [ -n "$_f" ] || continue
+  LAW_FILES[_i]=$_f
+  _i=$((_i + 1))
+done <<EOF
+$(find laws -maxdepth 1 -name '*.md' ! -name 'INDEX.md' | sort)
+EOF
 LAW_COUNT=${#LAW_FILES[@]}
 
 # --- 1. index integrity -------------------------------------------------------
@@ -253,6 +270,207 @@ else
   done
   [ "$uncovered" -eq 0 ] && ok selftest-coverage "${#GATE_RULES[@]} rules declared, all non-meta rules have a red-case"
 fi
+
+# --- 9. parallel routing surfaces stay bijective ------------------------------
+# laws/INDEX.md is the source of truth. core/ALWAYS.md is guarded above.
+# llms.txt is a third writer over the same set of ids — keep the bijection.
+section "llms.txt routing completeness"
+if [ ! -f llms.txt ]; then
+  fail llms-txt-complete "llms.txt — missing"
+else
+  # Law entries look like: - [id](…/laws/id.md): … — not the INDEX/entry-point links.
+  LLMS_IDS=$(grep -oE '\[[a-z0-9-]+\]\([^)]*/laws/[a-z0-9-]+\.md\)' llms.txt \
+    | sed -E 's/^\[([a-z0-9-]+)\].*/\1/' | sort -u)
+  for f in "${LAW_FILES[@]}"; do
+    id=$(basename "$f" .md)
+    grep -qx "$id" <<< "$LLMS_IDS" || fail llms-txt-complete "llms.txt — law not listed: $id"
+  done
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    [ -f "laws/$id.md" ] || fail llms-txt-complete "llms.txt — points at a non-existent law: $id"
+  done <<< "$LLMS_IDS"
+  summary llms-txt-complete "$LAW_COUNT laws bijective with llms.txt"
+fi
+
+# --- 10. live law-count literals stay honest ----------------------------------
+# The count is hardcoded on four live surfaces. CHANGELOG.md is excluded: historical
+# release notes correctly name past counts and must not be rewritten when the corpus grows.
+section "law count consistency"
+COUNT_SURFACES=(laws/INDEX.md README.md AGENTS.md llms.txt)
+# Class: an integer asserted as the corpus size — a number, then at most four
+# adjective tokens, then the word law/laws. Caps the gap so "60 lines… two laws"
+# does not count, while "33 durable engineering laws" still does.
+COUNT_NUM_THEN_LAWS='\b([0-9]+)([[:space:]]+[[:alpha:],-]{1,40}){0,4}[[:space:]]+laws?\b'
+count_mismatches=0
+for f in "${COUNT_SURFACES[@]}"; do
+  [ -f "$f" ] || { fail law-count-consistent "$f — missing count surface"; continue; }
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    line=${hit%%:*}; text=${hit#*:}
+    asserted=$(printf '%s\n' "$text" | grep -oE "$COUNT_NUM_THEN_LAWS" | head -1 | grep -oE '[0-9]+' | head -1)
+    [ -n "$asserted" ] || continue
+    if [ "$asserted" -ne "$LAW_COUNT" ]; then
+      fail law-count-consistent "$f:$line — asserts $asserted laws; disk has $LAW_COUNT"
+      count_mismatches=1
+    fi
+  done < <(grep -nE "$COUNT_NUM_THEN_LAWS" "$f")
+done
+[ "$count_mismatches" -eq 0 ] && summary law-count-consistent "live count literals equal disk ($LAW_COUNT)"
+
+# --- 11. published coordinates are resolved -----------------------------------
+# Closed class: the install-path placeholder. The needle is assembled at runtime with
+# printf so the gate does not match itself; nothing is excluded on the gate's behalf.
+section "published coordinates"
+PLACEHOLDER=$(printf '%s/%s' OWNER REPO)
+placeholder_hits=0
+while IFS= read -r hit; do
+  [ -n "$hit" ] || continue
+  fail no-placeholder-coordinates "$hit — unresolved repository-coordinate placeholder"
+  placeholder_hits=1
+done < <(grep -rnF --exclude-dir=.git --exclude-dir=dist "$PLACEHOLDER" . 2>/dev/null || true)
+[ "$placeholder_hits" -eq 0 ] && ok no-placeholder-coordinates "no unresolved install-path placeholder"
+
+# --- 12. tooling shell purity -------------------------------------------------
+# Two floors, one rule id:
+#   - Scripts whose shebang declares sh must be POSIX (no bashisms).
+#   - Every script must stay on bash 3.2 + POSIX utilities (no bash-4-only, no GNU-only).
+# The posix over-match twin proves POSIX-legal lookalikes stay silent; the tooling
+# twin proves a documented/forbidden name inside a comment stays silent.
+section "tooling shell purity"
+# Bashisms forbidden in sh scripts. Each alternative has a red-case.
+POSIX_BASH_ONLY='\$\{[A-Za-z_][A-Za-z0-9_]*//|\[\[([^:]|$)|<<<|\+=\(|\bmapfile\b|\bdeclare -[aA]|\blocal -[aA]'
+# Bash 4+ / GNU-only forbidden in EVERY script (tooling tier = bash 3.2 + POSIX).
+# sed -i without a backup-suffix argument is GNU; BSD requires sed -i '' or sed -i.bak.
+TOOLING_FORBIDDEN='\bmapfile\b|\breadarray\b|\bdeclare -A\b|\$\{[A-Za-z_][A-Za-z0-9_]*\^\^|\$\{[A-Za-z_][A-Za-z0-9_]*,,|\bglobstar\b|\bsed[[:space:]]+-i[[:space:]]+['\''"s/]|\breadlink[[:space:]]+-f\b|\bgrep[[:space:]]+-P\b|\bdate[[:space:]]+-d\b|\bstat[[:space:]]+-c\b'
+posix_hits=0
+for f in scripts/*.sh; do
+  [ -f "$f" ] || continue
+  shebang=$(head -n 1 "$f")
+  case "$shebang" in
+    '#!/usr/bin/env sh'|'#!/bin/sh')
+      while IFS= read -r hit; do
+        [ -n "$hit" ] || continue
+        text=${hit#*:}
+        case "$text" in '#'*|[[:space:]]'#'*) continue ;; esac
+        fail posix-shell-purity "$f:${hit%%:*} — bash-only construct in an sh script"
+        posix_hits=1
+      done <<EOF
+$(grep -nE "$POSIX_BASH_ONLY" "$f" || true)
+EOF
+      ;;
+  esac
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    text=${hit#*:}
+    case "$text" in
+      '#'*|[[:space:]]'#'*) continue ;;
+      # Pattern registries and selftest case labels must name constructs to forbid them.
+      *POSIX_BASH_ONLY=*|*TOOLING_FORBIDDEN=*) continue ;;
+      case_\ *|twin_\ *) continue ;;
+    esac
+    fail posix-shell-purity "$f:${hit%%:*} — bash-4-only or GNU-only construct in tooling"
+    posix_hits=1
+  done <<EOF
+$(grep -nE "$TOOLING_FORBIDDEN" "$f" || true)
+EOF
+done
+[ "$posix_hits" -eq 0 ] && ok posix-shell-purity "tooling scripts stay on bash 3.2 + POSIX utilities"
+
+# --- 13. README group table stays bijective -----------------------------------
+# Same second-writer failure class as llms.txt: the group table must list every law
+# exactly once, and every listed id must resolve.
+section "README group table"
+if [ ! -f README.md ]; then
+  fail readme-groups-complete "README.md — missing"
+else
+  README_IDS=$(sed -n '/^## The laws$/,/^Full table/p' README.md \
+    | grep -oE '`[a-z0-9-]+`' | tr -d '`' || true)
+  README_SORTED=$(printf '%s\n' "$README_IDS" | sort)
+  README_UNIQ=$(printf '%s\n' "$README_IDS" | sort -u)
+  while IFS= read -r dup; do
+    [ -n "$dup" ] || continue
+    fail readme-groups-complete "README.md — law listed in more than one group: $dup"
+  done <<EOF
+$(printf '%s\n' "$README_SORTED" | uniq -d)
+EOF
+  for f in "${LAW_FILES[@]}"; do
+    id=$(basename "$f" .md)
+    printf '%s\n' "$README_UNIQ" | grep -qx "$id" \
+      || fail readme-groups-complete "README.md — law not in the group table: $id"
+  done
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    [ -f "laws/$id.md" ] || fail readme-groups-complete "README.md — group table points at a non-existent law: $id"
+  done <<EOF
+$README_UNIQ
+EOF
+  summary readme-groups-complete "$LAW_COUNT laws bijective with the README group table"
+fi
+
+# --- 14. American English orthography -----------------------------------------
+# Catches accented prose the moment it lands (non-ASCII letters). Does NOT catch
+# unaccented non-English text — that stays a human-review concern. Do not oversell.
+# Typographic characters already in corpus use are allowlisted explicitly:
+#   — em dash (prose breaks)    – en dash (numeric ranges)
+#   → arrow (flow)              ⇒ implication (ALWAYS.md)
+#   … ellipsis                  · middle dot (README group separators)
+#   § section sign (cross-refs) ≥ ≤ comparison
+#   ─ │ └ ├ box-drawing (README layout diagram)
+section "english-only orthography"
+english_hits=0
+while IFS= read -r f; do
+  [ -f "$f" ] || continue
+  [ -L "$f" ] && continue
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    fail english-only "$f:$hit — non-ASCII letter; corpus is American English only"
+    english_hits=1
+  done <<EOF
+$(awk '
+  {
+    line = $0
+    gsub(/—/, "", line)
+    gsub(/–/, "", line)
+    gsub(/→/, "", line)
+    gsub(/⇒/, "", line)
+    gsub(/…/, "", line)
+    gsub(/·/, "", line)
+    gsub(/§/, "", line)
+    gsub(/≥/, "", line)
+    gsub(/≤/, "", line)
+    gsub(/─/, "", line)
+    gsub(/│/, "", line)
+    gsub(/└/, "", line)
+    gsub(/├/, "", line)
+    if (line ~ /[\200-\377]/) print NR
+  }
+' "$f")
+EOF
+done <<EOF
+$(find . -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.txt' -o -name '*.sh' -o -name '*.stub.md' \) \
+  ! -path './.git/*' ! -path './dist/*' | sort)
+EOF
+[ "$english_hits" -eq 0 ] && ok english-only "no non-ASCII letters outside the typographic allowlist"
+
+# --- 15. product tier stays inert ---------------------------------------------
+# core/, laws/, adapters/, templates/, and llms.txt must not be symlinks and must not
+# carry an executable bit — the product tier executes nothing on any OS or terminal.
+section "product tier inert"
+inert_hits=0
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  if [ -L "$f" ]; then
+    fail product-tier-inert "$f — product-tier path must not be a symlink"
+    inert_hits=1
+  elif [ -f "$f" ] && [ -x "$f" ]; then
+    fail product-tier-inert "$f — product-tier file must not be executable"
+    inert_hits=1
+  fi
+done <<EOF
+$(find core laws adapters templates -type f -o -type l 2>/dev/null | sort)
+llms.txt
+EOF
+[ "$inert_hits" -eq 0 ] && ok product-tier-inert "product tier has no symlinks and no executable bits"
 
 # --- result -------------------------------------------------------------------
 printf '\n'
