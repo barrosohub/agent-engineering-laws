@@ -109,7 +109,8 @@ and ceiling, load-table completeness and resolution, cross-reference resolution,
 coupling, always-on size budget, environment coupling, temporal coupling, URLs in laws,
 compatibility-file shape, gate self-coverage, `llms.txt` bijection, README group-table
 bijection, live law-count consistency, unresolved coordinate placeholders, tooling shell
-purity (POSIX `sh` + bash 3.2), American-English orthography, and product-tier inertness.
+purity (POSIX `sh` + bash 3.2), American-English orthography, product-tier inertness, and
+braced expansions before non-ASCII bytes (`unbraced-nonascii`).
 
 `README.md`, `INSTALL.md`, `MAINTENANCE.md`, `CHANGELOG.md` and `scripts/` are excluded from
 the coupling scans on purpose: they must be able to NAME what is out of scope in order to

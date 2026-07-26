@@ -41,11 +41,19 @@ defect. Each is mechanically enforced where enforcement is possible.
 | C11 | Product tier executes nothing (committed modes: no symlink, no executable bit under product paths). | `product-tier-inert` |
 | C12 | Tooling targets bash 3.2 + POSIX utilities + git where the index is read; never a second per-platform implementation. | `posix-shell-purity` |
 | C13 | The corpus is American English; accented non-ASCII letters are rejected. | `english-only` |
+| C14 | Shell scripts brace `$VAR` before any non-ASCII byte (bash 3.2 identifier trap). | `unbraced-nonascii` |
 
 **Amending the constitution.** An invariant may be changed only by a change that (a) states
 which invariant, (b) states what evidence forced it, (c) updates the enforcing rule *and* its
 red-case, and (d) records all of it in `CHANGELOG.md` as a major version. An amendment that
 merely *removes* enforcement is not an amendment — it is erosion. Reject it.
+
+### Branch contract
+
+`main` is the **distribution branch**. Every published raw URL and the installer resolve
+against `main`. Promoting work to `main` is therefore a release act, not routine housekeeping:
+the always-on file, law corpus, and install paths consumers fetch are whatever `main` has.
+Do not treat a merge to `main` as informal integration.
 
 ---
 

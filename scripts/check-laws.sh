@@ -20,6 +20,9 @@
 
 set -uo pipefail
 
+# Pin C locale so byte-class rules and collation are identical on every runner.
+export LC_ALL=C
+
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT" || exit 2
 [ -d laws ] && [ -f core/ALWAYS.md ] || { echo "FAIL [structure] repository layout not found" >&2; exit 2; }
@@ -33,7 +36,7 @@ GATE_RULES=(
   always-on-size banned-coupling temporal-coupling url-in-law claude-pointer
   selftest-coverage
   llms-txt-complete law-count-consistent no-placeholder-coordinates posix-shell-purity
-  readme-groups-complete english-only product-tier-inert
+  readme-groups-complete english-only product-tier-inert unbraced-nonascii
 )
 GATE_RULES_META=(selftest-coverage)
 
@@ -120,7 +123,7 @@ for f in "${LAW_FILES[@]}"; do
 done
 summary front-matter-id "$LAW_COUNT front-matter ids match their filenames"
 summary law-has-title "$LAW_COUNT laws carry an H1 title"
-summary law-size "$LAW_COUNT laws within $MIN_LAW_LINES–$MAX_LAW_LINES lines"
+summary law-size "$LAW_COUNT laws within ${MIN_LAW_LINES}–${MAX_LAW_LINES} lines"
 
 DUPES=$(printf '%s' "$TITLES" | sort | uniq -d)
 if [ -n "$DUPES" ]; then
@@ -416,6 +419,9 @@ fi
 #   … ellipsis                  · middle dot (README group separators)
 #   § section sign (cross-refs) ≥ ≤ comparison
 #   ─ │ └ ├ box-drawing (README layout diagram)
+# Strip allowlisted UTF-8 byte sequences with sed, then detect leftover non-ASCII with
+# grep under LC_ALL=C (bytes >= 0x80 are not [[:print:]]). No awk — mawk is not
+# multi-byte aware and would make this a dead rule on Ubuntu runners.
 section "english-only orthography"
 english_hits=0
 while IFS= read -r f; do
@@ -426,25 +432,11 @@ while IFS= read -r f; do
     fail english-only "$f:$hit — non-ASCII letter; corpus is American English only"
     english_hits=1
   done <<EOF
-$(awk '
-  {
-    line = $0
-    gsub(/—/, "", line)
-    gsub(/–/, "", line)
-    gsub(/→/, "", line)
-    gsub(/⇒/, "", line)
-    gsub(/…/, "", line)
-    gsub(/·/, "", line)
-    gsub(/§/, "", line)
-    gsub(/≥/, "", line)
-    gsub(/≤/, "", line)
-    gsub(/─/, "", line)
-    gsub(/│/, "", line)
-    gsub(/└/, "", line)
-    gsub(/├/, "", line)
-    if (line ~ /[\200-\377]/) print NR
-  }
-' "$f")
+$(LC_ALL=C sed \
+  -e 's/—//g' -e 's/–//g' -e 's/→//g' -e 's/⇒//g' -e 's/…//g' \
+  -e 's/·//g' -e 's/§//g' -e 's/≥//g' -e 's/≤//g' \
+  -e 's/─//g' -e 's/│//g' -e 's/└//g' -e 's/├//g' \
+  "$f" | LC_ALL=C grep -n '[^[:print:][:blank:]]' | sed 's/:.*//')
 EOF
 done <<EOF
 $(find . -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.txt' -o -name '*.sh' -o -name '*.stub.md' \) \
@@ -452,7 +444,35 @@ $(find . -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.txt' -o -name '*.s
 EOF
 [ "$english_hits" -eq 0 ] && ok english-only "no non-ASCII letters outside the typographic allowlist"
 
-# --- 15. product tier stays inert ---------------------------------------------
+# --- 15. unbraced expansion immediately before a non-ASCII byte ----------------
+# Bash 3.2 absorbs a following non-ASCII byte into the parameter name (unbraced
+# dollar-VAR then en-dash looks up a different name); bash 4+ stops at the first
+# non-ASCII byte. Require braces before any non-ASCII so both agree.
+# Detection is byte-exact under LC_ALL=C: map high bytes to ASCII at-signs, then
+# find an unbraced dollar-IDENT immediately before an at-sign. Comment lines are
+# skipped so documentation may name the construct.
+section "unbraced expansion before non-ASCII"
+unbraced_hits=0
+for f in scripts/*.sh; do
+  [ -f "$f" ] || continue
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    line=${hit%%:*}
+    text=${hit#*:}
+    trimmed=$(printf '%s\n' "$text" | sed 's/^[[:space:]]*//')
+    case "$trimmed" in
+      '#'*) continue ;;
+      case_\ *|twin_\ *) continue ;;
+    esac
+    fail unbraced-nonascii "$f:$line — unbraced \$VAR immediately before a non-ASCII byte; write \${VAR}"
+    unbraced_hits=1
+  done <<EOF
+$(LC_ALL=C tr '\200-\377' '@' < "$f" | LC_ALL=C grep -nE '\$[A-Za-z_][A-Za-z0-9_]*@' || true)
+EOF
+done
+[ "$unbraced_hits" -eq 0 ] && ok unbraced-nonascii "no unbraced \$VAR sits before a non-ASCII byte"
+
+# --- 16. product tier stays inert ---------------------------------------------
 # Contract is about what is COMMITTED, not what a particular filesystem reports.
 # Read mode bits from git's index (identical on every platform):
 #   100644 regular file, 100755 executable, 120000 symlink.

@@ -8,6 +8,8 @@ name: gates
 # Do not "simplify" this back into one matrix.
 on:
   push:
+    branches:
+      - "**"
   pull_request:
   schedule:
     - cron: "0 12 * * 1"
@@ -20,6 +22,7 @@ concurrency:
 jobs:
   check-laws:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -64,6 +67,7 @@ jobs:
   selftest-scheduled:
     if: github.event_name == 'schedule'
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
