@@ -127,18 +127,39 @@ A sample, so you know the register:
 
 ## Compatibility
 
-| Tool | Reads | Status |
-|---|---|---|
-| Any `AGENTS.md`-aware agent | `AGENTS.md` | native |
-| Claude Code | `CLAUDE.md` → `AGENTS.md`, optional `.claude/rules/` | pointer adapter |
-| Cursor | `.cursor/rules/*.mdc` → `AGENTS.md` | pointer adapter |
-| GitHub Copilot | `.github/copilot-instructions.md` → `AGENTS.md` | pointer adapter |
-| OpenCode | `AGENTS.md` | native |
-| Any other agent with a custom instructions path | point it at `AGENTS.md` | supported |
-| Gemini CLI | point its own configuration at `AGENTS.md` | out of scope, no adapter versioned |
+Compatibility is defined by **mechanism**, not by a product roster. Product names below are
+non-normative examples: they age, the mechanism does not. The corpus assumes only that an
+agent can **read a file** and **follow an instruction**.
 
-The corpus assumes only that an agent can **read a file** and **follow an instruction**. That
-is the entire integration contract, and it is why this survives tool churn.
+### Reads `AGENTS.md` at the repository root with no configuration
+
+Examples: OpenCode, Codex CLI, Copilot CLI, Copilot coding agent, Aider, Zed, Amp, Cline,
+Roo Code, Continue, and the JetBrains agent.
+
+### Reads `AGENTS.md` once told to, via one line of its own configuration
+
+- **VS Code** (agent chat): enable `chat.useAgentsMdFile`. VS Code also reads `CLAUDE.md`,
+  `.claude/CLAUDE.md`, and `.claude/rules/`, so the Claude pointer adapter in this
+  repository serves VS Code as well as Claude Code.
+- **Gemini CLI**: no Gemini instruction file is versioned here — that is a locked decision,
+  not an omission. Point Gemini at `AGENTS.md` with one settings line:
+  `"context": { "fileName": ["AGENTS.md", "GEMINI.md"] }`.
+
+### Reads its own file; use the pointer adapter in this repository
+
+- **Claude Code** reads `CLAUDE.md`, not `AGENTS.md`. The `@AGENTS.md` (or symlink) pointer
+  stays necessary. Optional `.claude/rules/` adapters are also pointers.
+- **Cursor** reads `.cursor/rules/*.mdc` — install the Cursor adapters.
+- **GitHub Copilot chat** (VS Code, JetBrains, and github.com) reads only
+  `.github/copilot-instructions.md` and `.github/instructions/**.instructions.md` — the
+  Copilot pointer adapter is **required** for those surfaces. The Copilot coding agent and
+  Copilot CLI read `AGENTS.md` natively, so the same adapter is redundant there.
+
+Some resolvers are first-match-wins and check `.github/copilot-instructions.md` before
+`AGENTS.md`. Because this repository's adapters are **pointers, not copies**, that still
+lands on the single source of truth — concrete evidence for the pointers-not-copies rule.
+A pre-existing root rules file in a *consuming* repository can still shadow `AGENTS.md`;
+`INSTALL.md` detects that case and refuses to overwrite.
 
 ---
 

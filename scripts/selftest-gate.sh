@@ -3,12 +3,13 @@
 #
 # A green gate is consistent with two worlds: a correct gate, and a gate that never fails.
 # This script separates them. For every rule declared in check-laws.sh it:
-#   1. copies the repository to a unique scratch directory,
-#   2. injects exactly one violation of that rule,
-#   3. asserts the mutation landed (fingerprint change), then
-#   4. asserts the gate exits non-zero AND reports that specific rule id (red-case),
+#   1. builds one subject template (tree + local git index) once per run,
+#   2. copies that template into a unique scratch directory per case/twin,
+#   3. injects exactly one violation of that rule,
+#   4. asserts the mutation landed (fingerprint change), then
+#   5. asserts the gate exits non-zero AND reports that specific rule id (red-case),
 # and once, on an unmutated copy:
-#   5. asserts the gate passes (over-match twin — the rules must not fire on clean input).
+#   6. asserts the gate passes (over-match twin — the rules must not fire on clean input).
 # Per-rule over-match twins (twin_) prove a specific rule stays silent on legitimate input
 # that would trip a sloppy pattern.
 #
@@ -88,42 +89,79 @@ trap finish EXIT
 REPO_BEFORE=$(repo_manifest)
 
 # Fingerprint a subject tree so we can prove a mutation landed.
-# Includes symlink targets and permission bits — chmod-only mutations must count.
+# Includes symlink targets, permission bits, and the git index — index-only mode
+# mutations (product-tier-inert) must count.
 fingerprint() {
   local dir=$1
-  ( cd "$dir" && find . \( -type f -o -type l \) ! -path './.git/*' ! -path './dist/*' | sort \
-    | while IFS= read -r f; do
-        if [ -L "$f" ]; then
-          printf 'L %s -> %s\n' "$f" "$(readlink "$f")"
-        else
-          printf 'F %s ' "$f"
-          ls -l "$f" | awk '{ print $1 }'
-          cksum "$f"
-        fi
-      done | cksum )
+  (
+    cd "$dir" && find . \( -type f -o -type l \) ! -path './.git/*' ! -path './dist/*' | sort \
+      | while IFS= read -r f; do
+          if [ -L "$f" ]; then
+            printf 'L %s -> %s\n' "$f" "$(readlink "$f")"
+          else
+            printf 'F %s ' "$f"
+            ls -l "$f" | awk '{ print $1 }'
+            cksum "$f"
+          fi
+        done
+    if [ -f .git/index ]; then
+      printf 'INDEX '
+      cksum .git/index
+    fi
+  ) | cksum
 }
 
-# Copy the repository into a UNIQUE scratch subject. Never reuse a path across cases.
+# Build the subject template ONCE: full tree plus a local git index so rules that
+# read committed modes (product-tier-inert) can fire inside subjects.
+TEMPLATE=
+build_template() {
+  TEMPLATE="$WORK/template"
+  rm -rf "$TEMPLATE"
+  mkdir -p "$TEMPLATE" || {
+    printf '  BROKEN SUBJECT [template] mkdir failed\n' >&2
+    exit 1
+  }
+  if ! ( cd "$ROOT" && tar -cf - \
+      --exclude='./.git' --exclude='./dist' . ) | ( cd "$TEMPLATE" && tar -xf - ); then
+    printf '  BROKEN SUBJECT [template] extraction failed\n' >&2
+    exit 1
+  fi
+  if [ ! -f "$TEMPLATE/scripts/check-laws.sh" ] || [ ! -d "$TEMPLATE/laws" ]; then
+    printf '  BROKEN SUBJECT [template] incomplete tree after extraction\n' >&2
+    exit 1
+  fi
+  if ! (
+    cd "$TEMPLATE" \
+      && git init -q \
+      && git add -A \
+      && git -c user.name=selftest -c user.email=selftest@test commit -q -m template
+  ); then
+    printf '  BROKEN SUBJECT [template] git init/commit failed\n' >&2
+    exit 1
+  fi
+}
+
+# Copy the template into a UNIQUE scratch subject. Never reuse a path across cases.
+# SUBJECT_SEQ makes every case_/twin_/clean call get its own directory; cp -a from
+# TEMPLATE means case N never sees case N-1's mutations.
 subject() {
   SUBJECT_SEQ=$((SUBJECT_SEQ + 1))
   local label=$1
   local dir="$WORK/${SUBJECT_SEQ}-${label}"
   rm -rf "$dir"
-  mkdir -p "$dir" || {
-    printf '  BROKEN SUBJECT [%s] mkdir failed\n' "$label" >&2
-    exit 1
-  }
-  if ! ( cd "$ROOT" && tar -cf - \
-      --exclude='./.git' --exclude='./dist' . ) | ( cd "$dir" && tar -xf - ); then
-    printf '  BROKEN SUBJECT [%s] extraction failed\n' "$label" >&2
+  if ! cp -a "$TEMPLATE" "$dir"; then
+    printf '  BROKEN SUBJECT [%s] template copy failed\n' "$label" >&2
     exit 1
   fi
   if [ ! -f "$dir/scripts/check-laws.sh" ] || [ ! -d "$dir/laws" ]; then
-    printf '  BROKEN SUBJECT [%s] incomplete tree after extraction\n' "$label" >&2
+    printf '  BROKEN SUBJECT [%s] incomplete tree after copy\n' "$label" >&2
     exit 1
   fi
   printf '%s' "$dir"
 }
+
+build_template
+
 
 # Portable in-place sed for mutations (GNU and BSD).
 # Usage inside a mutation: sed_inplace 's/foo/bar/' file
@@ -318,10 +356,13 @@ twin_ english-only "allowlisted typographic characters stay silent" \
   'printf "\nRanges 1–3 — flow → imply ⇒ omit… sep · see §1 compare ≥ ≤ box ─│└├\n" >> README.md'
 
 case_ product-tier-inert "a product-tier file becomes executable" \
-  'chmod +x laws/debugging.md'
+  'git update-index --chmod=+x laws/debugging.md'
 
 case_ product-tier-inert "a product-tier path becomes a symlink" \
-  'rm laws/kiss-tests.md && ln -s debugging.md laws/kiss-tests.md'
+  'blob=$(printf "debugging.md" | git hash-object -w --stdin) && git update-index --cacheinfo "120000,$blob,laws/kiss-tests.md"'
+
+twin_ product-tier-inert "a tooling-tier executable stays silent" \
+  'printf "#!/usr/bin/env sh\n" > scripts/twin-exec.sh && git add scripts/twin-exec.sh && git update-index --chmod=+x scripts/twin-exec.sh'
 # --- result -------------------------------------------------------------------
 printf '\n'
 if [ "$FAILED" -eq 0 ]; then

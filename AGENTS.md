@@ -130,10 +130,12 @@ This repository has two tiers with different contracts:
 - **Product tier** (`core/`, `laws/`, `adapters/`, `templates/`, `llms.txt`, and the
   installed `AGENTS.md` / `CLAUDE.md` pointers): executes nothing. It therefore works on
   every OS and terminal, including Windows cmd and PowerShell. Enforced by
-  `product-tier-inert` and by documenting `@AGENTS.md` as the primary Claude pointer.
+  `product-tier-inert` (committed index modes: no `100755`, no `120000` under product
+  paths) and by documenting `@AGENTS.md` as the primary Claude pointer.
 - **Tooling tier** (`scripts/`): one implementation targeting bash 3.2 plus POSIX utilities
-  (Linux, macOS, WSL, BusyBox, Git Bash). Never a second per-platform implementation of the
-  same gate — that would be a parallel contract. Enforced by `posix-shell-purity`.
+  (Linux, macOS, WSL, BusyBox, Git Bash), plus `git` for rules that read the index.
+  Never a second per-platform implementation of the same gate — that would be a parallel
+  contract. Enforced by `posix-shell-purity`.
 
 ## Git
 
@@ -147,15 +149,17 @@ readiness is not authorization.
 - **What this repository is:** a vendor-neutral corpus of 33 universal engineering laws for
   coding agents, distributed as an always-on file plus lazy-loaded law files.
 - **Stack:** Markdown and shell. Product tier executes nothing. Tooling tier requires bash
-  3.2+, POSIX coreutils, grep, sed, awk. No build, no dependencies, no lockfiles, no network.
+  3.2+, POSIX coreutils, grep, sed, awk, and git (for `product-tier-inert` index modes).
+  No build, no dependencies, no lockfiles, no network.
 - **Quality gate:** `scripts/check-laws.sh && scripts/selftest-gate.sh`
 - **Advisory audit:** `scripts/audit-corpus.sh` (never blocks)
 - **Render distribution file:** `scripts/render-core.sh` (writes `dist/`, ignored)
 - **Install into a target repo:** `scripts/install.sh --target <path>`
 - **Locked decisions:** canonical file is `AGENTS.md`; Claude compatibility is a pointer
-  (prefer `@AGENTS.md` import); no Gemini instruction file; no vendor coupling; American
-  English only; laws cite each other by id; laws carry no dates and no URLs; tooling is
-  never duplicated per platform.
+  (prefer `@AGENTS.md` import); no Gemini instruction file in this repository (consumers
+  configure Gemini CLI themselves — see `INSTALL.md` / `README.md` for the one-line
+  settings form); no vendor coupling; American English only; laws cite each other by id;
+  laws carry no dates and no URLs; tooling is never duplicated per platform.
 - **Non-goals:** tool-specific rule dialects beyond thin pointers; auto-generated laws;
   project-specific or domain-specific guidance; any dependency that must be installed;
   a second per-platform implementation of the tooling tier.

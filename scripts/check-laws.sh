@@ -453,24 +453,36 @@ EOF
 [ "$english_hits" -eq 0 ] && ok english-only "no non-ASCII letters outside the typographic allowlist"
 
 # --- 15. product tier stays inert ---------------------------------------------
-# core/, laws/, adapters/, templates/, and llms.txt must not be symlinks and must not
-# carry an executable bit — the product tier executes nothing on any OS or terminal.
+# Contract is about what is COMMITTED, not what a particular filesystem reports.
+# Read mode bits from git's index (identical on every platform):
+#   100644 regular file, 100755 executable, 120000 symlink.
+# git is a tooling-tier dependency for this rule (already required to obtain the repo).
 section "product tier inert"
 inert_hits=0
-while IFS= read -r f; do
-  [ -n "$f" ] || continue
-  if [ -L "$f" ]; then
-    fail product-tier-inert "$f — product-tier path must not be a symlink"
-    inert_hits=1
-  elif [ -f "$f" ] && [ -x "$f" ]; then
-    fail product-tier-inert "$f — product-tier file must not be executable"
-    inert_hits=1
-  fi
-done <<EOF
-$(find core laws adapters templates -type f -o -type l 2>/dev/null | sort)
-llms.txt
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  fail product-tier-inert "not a git work tree — this rule reads committed modes from the index"
+  inert_hits=1
+else
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    mode=${line%% *}
+    path=$(printf '%s\n' "$line" | cut -f2-)
+    [ -n "$path" ] || continue
+    case "$mode" in
+      120000)
+        fail product-tier-inert "$path — product-tier path must not be a symlink (index mode 120000)"
+        inert_hits=1
+        ;;
+      100755)
+        fail product-tier-inert "$path — product-tier file must not be executable (index mode 100755)"
+        inert_hits=1
+        ;;
+    esac
+  done <<EOF
+$(git ls-files -s -- core laws adapters templates llms.txt 2>/dev/null)
 EOF
-[ "$inert_hits" -eq 0 ] && ok product-tier-inert "product tier has no symlinks and no executable bits"
+fi
+[ "$inert_hits" -eq 0 ] && ok product-tier-inert "product tier index has no symlinks and no executable bits"
 
 # --- result -------------------------------------------------------------------
 printf '\n'

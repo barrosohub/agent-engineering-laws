@@ -18,7 +18,7 @@ You are installing a set of universal engineering laws into THIS repository.
 Source repository: https://github.com/barrosohub/agent-engineering-laws  (raw base:
 https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/)
 
-Execute these steps in order. Report what you did at the end. Do not skip step 8.
+Execute these steps in order. Report what you did at the end. Do not skip step 9.
 
 1) INSTALL THE ALWAYS-ON FILE
    - Read the source file `core/ALWAYS.md`.
@@ -49,17 +49,31 @@ Execute these steps in order. Report what you did at the end. Do not skip step 8
 
 4) DO NOT CREATE ANY OTHER TOOL-SPECIFIC MEMORY FILE
    - In particular, do NOT create a Gemini-specific instruction file (GEMINI.md).
-     It is out of scope for this blueprint. Gemini CLI users point their own
-     configuration at `AGENTS.md`.
+     That locked decision is an actionable instruction, not an omission: Gemini CLI
+     users point their own configuration at `AGENTS.md` with:
+       "context": { "fileName": ["AGENTS.md", "GEMINI.md"] }
 
-5) OPTIONAL ADAPTERS — install only the ones this repository actually uses
+5) DETECT PRE-EXISTING ROOT RULES FILES THAT CAN SHADOW AGENTS.md
+   - Some editors resolve instruction files by first match in a fixed precedence list
+     (for example `.github/copilot-instructions.md` is checked before `AGENTS.md`).
+   - Before installing adapters, check for pre-existing root-level rules files such as
+     `.github/copilot-instructions.md` and any other tool-owned instruction file at the
+     repository root that this install would otherwise replace.
+   - If such a file already exists: do NOT overwrite or delete it. Report each path, explain
+     that it can shadow `AGENTS.md` on first-match-wins resolvers, and instruct me to
+     prepend a one-line pointer to `AGENTS.md` (for example `@AGENTS.md` or an equivalent
+     one-line redirect) at the top of that file. Wait for my instruction before continuing
+     with adapter install for those paths.
+   - Same non-destructive posture as step 1 for a pre-existing `AGENTS.md`.
+
+6) OPTIONAL ADAPTERS — install only the ones this repository actually uses
    - Cursor:   copy source `adapters/cursor/rules/*.mdc` to `./.cursor/rules/`
    - Claude:   copy source `adapters/claude/rules/*.md` to `./.claude/rules/`
    - Copilot:  copy source `adapters/github/copilot-instructions.md` to
                `./.github/copilot-instructions.md`
    - These are pointers, not copies of the corpus. Do not inline law text into them.
 
-6) FILL IN PROJECT CONTEXT
+7) FILL IN PROJECT CONTEXT
    - Edit ONLY the `## Project context` section at the bottom of `./AGENTS.md`.
    - Fill in facts you can verify in THIS repository right now: what it is, stack and
      pinned versions read from lockfiles, install/run/test/lint commands found in
@@ -67,10 +81,10 @@ Execute these steps in order. Report what you did at the end. Do not skip step 8
    - Everything you cannot verify stays `TODO`. Do NOT guess commands or versions.
    - No machine-local absolute paths.
 
-7) RESTART
+8) RESTART
    - Tell me to restart my agent session so the new instruction files are loaded.
 
-8) DO NOT COMMIT
+9) DO NOT COMMIT
    - Do NOT run `git add`, `git commit`, `git push`, or create a branch, PR, or release.
    - Leave the changes in the working tree and list every file you created or modified.
    - I will review and commit myself.

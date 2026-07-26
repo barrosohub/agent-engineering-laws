@@ -38,8 +38,8 @@ defect. Each is mechanically enforced where enforcement is possible.
 | C8 | Every gate rule has a red-case that proves it fires. | `selftest-coverage`, `selftest-gate.sh` |
 | C9 | Compatibility files are pointers, never copies of the corpus. | `claude-pointer` |
 | C10 | The repository runs from a clean clone with no network and no package manager. | §8 recovery drill |
-| C11 | Product tier executes nothing (no symlinks, no executable bits under product paths). | `product-tier-inert` |
-| C12 | Tooling targets bash 3.2 + POSIX utilities; never a second per-platform implementation. | `posix-shell-purity` |
+| C11 | Product tier executes nothing (committed modes: no symlink, no executable bit under product paths). | `product-tier-inert` |
+| C12 | Tooling targets bash 3.2 + POSIX utilities + git where the index is read; never a second per-platform implementation. | `posix-shell-purity` |
 | C13 | The corpus is American English; accented non-ASCII letters are rejected. | `english-only` |
 
 **Amending the constitution.** An invariant may be changed only by a change that (a) states
