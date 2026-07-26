@@ -16,6 +16,48 @@ Law ids are a contract. Do not rename one without a major bump and a mapping ent
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-26
+
+Theme: CI on real runners found two environment-dependent gate bugs local green never saw.
+
+### Fixed
+
+- Unbraced `$MIN_LAW_LINES–$MAX_LAW_LINES` in `scripts/check-laws.sh` crashed bash 3.2 under
+  `set -u` (the en dash was absorbed into the identifier). Braced to `${MIN_LAW_LINES}–${MAX_LAW_LINES}`.
+  Forced by: macOS CI `/bin/bash` 3.2.57, not by inspection. Verified how: braces land; new
+  rule `unbraced-nonascii` catches the old form.
+- `english-only` no longer uses awk. Ubuntu runners ship mawk (not multi-byte aware), so the
+  rule was a DEAD RULE there while GNU awk on the development machine stayed green. Strip
+  allowlisted UTF-8 with sed and detect leftovers with grep under `LC_ALL=C`. Forced by:
+  Ubuntu CI selftest. Verified how: red-case (accented letter) and twin (allowlisted
+  typography) still live; line numbers still refer to the real file.
+- Gate scripts pin `LC_ALL=C` once at the top so byte-class rules do not depend on the
+  caller's locale. Forced by: the awk/locale class of environment dependence.
+- Workflow: `fail-fast: false` on both matrices so one red platform cannot hide the others;
+  `push` is limited to branches (tags no longer re-run gates that already passed on that
+  commit). Forced by: macOS fail cancelled Windows before `product-tier-inert` was observed;
+  three tag pushes burned three full runs.
+- CHANGELOG: 1.0.0 has no matching `VERSION` in this repository's git history — the release
+  link is removed and the entry states that 1.0.0 predates tracked history. Do not invent a tag.
+- `MAINTENANCE.md`: `main` is the distribution branch; promoting to `main` is a release act.
+- `README.md` / `llms.txt`: GitHub Pages serves `llms.txt` at
+  `https://barrosohub.github.io/agent-engineering-laws/llms.txt`.
+
+### Added
+
+- Gate rule `unbraced-nonascii` (23 → 24): fails when an unbraced `$VAR` is immediately
+  followed by a non-ASCII byte in any `scripts/*.sh`. Red-case reintroduces the unbraced
+  form; twin proves `${VAR}–` stays silent. Detects exactly the former law-size summary line
+  when that form is restored.
+
+### Verified
+
+- Local: `check-laws` and `selftest-gate` exit 0 (24 rules); five consecutive identical
+  summaries on a frozen tree; `actionlint` clean.
+- bash 3.2 crash and mawk dead-rule: found by executing on real CI runners. Local machine
+  has GNU awk and bash 5.x — neither failure mode is fully reproducible here unless a 3.2
+  binary or mawk is installed (reported in the change report).
+
 ## [1.2.1] - 2026-07-25
 
 Theme: prove the tooling contract in CI, read product-tier modes from git, and stop
@@ -205,6 +247,10 @@ Theme: make the corpus survivable without a human maintainer, and make the gate 
 
 ## [1.0.0] - 2026-07-25
 
+Initial public corpus. This version predates this repository's git history — there is no
+commit with `VERSION` 1.0.0 and no release tag to link. The entry is kept as the narrative
+start of the corpus; do not invent a tag.
+
 ### Added
 
 - Initial corpus of 33 universal laws under `laws/`, one law per file with a stable
@@ -235,8 +281,8 @@ Theme: make the corpus survivable without a human maintainer, and make the gate 
 - Laws are written in English, as imperatives, and must be understandable without reading
   the rest of the repository.
 
-[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.3.0
 [1.2.1]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.1
 [1.2.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.0
 [1.1.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.1.0
-[1.0.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.0.0

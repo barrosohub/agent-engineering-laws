@@ -177,7 +177,7 @@ corpus — each with its counter.
 
 | Script | Role | Blocks? |
 |---|---|---|
-| `scripts/check-laws.sh` | 23 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
+| `scripts/check-laws.sh` | 24 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
 | `scripts/selftest-gate.sh` | Proves every rule fires on its own violation, and that none fire on a clean corpus | **yes** |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
@@ -204,7 +204,7 @@ INSTALL.md                    paste-ready installer prompt + fallbacks
 MAINTENANCE.md                the self-maintenance protocol
 AGENTS.md                     rules for agents editing this repository
 CLAUDE.md                     → AGENTS.md
-llms.txt                      machine-readable entry points
+llms.txt                      machine-readable entry points (also served on GitHub Pages)
 VERSION / CHANGELOG.md        semver of the corpus, and why each change happened
 core/ALWAYS.md                the file installed as AGENTS.md in consumers
 laws/INDEX.md                 id | title | path | when_to_load
@@ -213,6 +213,9 @@ adapters/                     pointers for Cursor, Claude, Copilot
 templates/                    the project-context stub
 scripts/                      install · render · check · selftest · audit
 ```
+
+GitHub Pages serves the machine-readable entry point at
+`https://barrosohub.github.io/agent-engineering-laws/llms.txt`.
 
 ## Versioning
 

@@ -28,6 +28,9 @@
 
 set -uo pipefail
 
+# Pin C locale so byte-class rules and collation are identical on every runner.
+export LC_ALL=C
+
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 KEEP=0
 [ "${1:-}" = "--keep" ] && KEEP=1
@@ -363,6 +366,14 @@ case_ product-tier-inert "a product-tier path becomes a symlink" \
 
 twin_ product-tier-inert "a tooling-tier executable stays silent" \
   'printf "#!/usr/bin/env sh\n" > scripts/twin-exec.sh && git add scripts/twin-exec.sh && git update-index --chmod=+x scripts/twin-exec.sh'
+
+# unbraced-nonascii: $VAR immediately before a non-ASCII byte (bash 3.2 identifier trap).
+# Assemble via printf %s so the harness source never contains $IDENT + high byte.
+case_ unbraced-nonascii "an unbraced expansion sits before a non-ASCII byte" \
+  'n=COUNT; printf "echo \$%s–x\n" "$n" >> scripts/install.sh'
+
+twin_ unbraced-nonascii "a braced expansion before a non-ASCII byte stays silent" \
+  'n=COUNT; printf "echo \${%s}–x\n" "$n" >> scripts/install.sh'
 # --- result -------------------------------------------------------------------
 printf '\n'
 if [ "$FAILED" -eq 0 ]; then

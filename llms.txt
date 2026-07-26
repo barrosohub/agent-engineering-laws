@@ -14,6 +14,10 @@ condition below. Do not fetch all 33 laws; that defeats the design.
 **Raw base URL.** `https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/`
 Every path below is relative to that base.
 
+**Served location.** This file is also published at
+`https://barrosohub.github.io/agent-engineering-laws/llms.txt` (GitHub Pages from `main`).
+The llms.txt convention expects a stable HTTP URL; that is it.
+
 ## Entry points
 
 - [core/ALWAYS.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/core/ALWAYS.md): the always-on file. Install as `./AGENTS.md` in the target repository. ~180 lines: operating core, the mandatory load table, and the project-context stub.

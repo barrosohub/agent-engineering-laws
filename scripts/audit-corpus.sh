@@ -13,6 +13,10 @@
 # Targets: bash 3.2 + POSIX utilities (no mapfile, no declare -A).
 
 set -uo pipefail
+
+# Pin C locale so byte-class rules and collation are identical on every runner.
+export LC_ALL=C
+
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT" || exit 0
 
