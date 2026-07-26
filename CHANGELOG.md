@@ -16,6 +16,74 @@ Law ids are a contract. Do not rename one without a major bump and a mapping ent
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-25
+
+Theme: prove the tooling contract in CI, read product-tier modes from git, and stop
+compatibility tables from rotting.
+
+### Fixed
+
+- `product-tier-inert` no longer trusts filesystem symlink/executable bits (unreliable on
+  Windows / Git Bash). It reads committed modes from the git index (`100644` / `100755` /
+  `120000`) and fails clearly outside a git work tree. Forced by: false PASS/FAIL risk on
+  Windows. Verified how: harness red-cases stage `100755` and `120000` under `laws/` via
+  index operations; tooling-tier executable twin stays silent; clean corpus passes.
+- Selftest product-tier cases that previously mixed filesystem mutations with index reads
+  now operate only at the index layer the rule inspects: executable via
+  `update-index --chmod=+x` only (no filesystem `chmod`); symlink via `hash-object` +
+  `update-index --cacheinfo 120000` (Git Bash `ln -s` copies and would leave a dead case);
+  tooling twin via `git update-index --chmod=+x` (Windows `core.fileMode=false` would make
+  a `chmod`+`git add` twin vacuous). Forced by: scheduled Windows selftest must prove the
+  rule, not the host filesystem.
+- `README.md` compatibility table replaced with mechanism groups so product renames cannot
+  silently rot the docs. Forced by: at least one listed tool already renamed. Verified how:
+  facts checked against vendor docs for Claude Code, VS Code `chat.useAgentsMdFile`, Gemini
+  `context.fileName`, and Copilot agent-vs-chat split.
+- `INSTALL.md`: detect pre-existing root rules files that can shadow `AGENTS.md` on
+  first-match-wins resolvers; do not overwrite — same posture as a pre-existing `AGENTS.md`.
+  Forced by: `.github/copilot-instructions.md` preceding `AGENTS.md` in at least one editor.
+- Workflow trigger key restored to unquoted `on:`. It was briefly quoted only to satisfy
+  PyYAML (YAML 1.1 maps bare `on` to a boolean); that is the wrong validator — GitHub's
+  parser and every documented example use the bare form, and a wrong key fails silently
+  (workflow never runs). Do not re-quote it for a linter. Validated with throwaway
+  `actionlint` under `/tmp`. Also: concurrency groups by workflow + event + ref so a push
+  cannot cancel the weekly scheduled three-OS selftest (the only bash 3.2 proof); Ubuntu
+  selftest skips same-repo `pull_request` when `push` already covers the head (a skipped
+  required check would block merges — documented in the workflow comment).
+
+### Added
+
+- `.github/workflows/gates.yml` — checkout@v7; unquoted `on:`; `check-laws` on
+  Ubuntu/macOS/Windows every push/PR; `selftest` on Ubuntu only per push (fork PRs still
+  covered; same-repo PRs skip by design); full three-OS selftest on a weekly schedule
+  (macOS `/bin/bash` is the bash 3.2 proof without macOS minutes on every push);
+  concurrency keyed by event so scheduled runs are never cancelled by a push.
+  Advisory audit is non-blocking. `GATE_BASH` is set once per job. Forced by: `bash --posix`
+  does not remove bash-4 builtins, so prior "posix" runs proved nothing about 3.2.
+
+### Changed
+
+- Selftest subject construction: build a template once (tree + local `git init`/`commit`),
+  then `cp -a` per case. **Neutral, not an optimization.** Solo baseline on this host:
+  117s for 46 subjects (~2.5s/subject). One `cp -a` measured at 26ms, so all copying is
+  ~1% of the run; the cost is running the full 23-rule gate once per case, by design.
+  Isolation unchanged (`SUBJECT_SEQ` unique dirs; leak probe passed).
+- `AGENTS.md` / `MAINTENANCE.md`: git is a stated tooling dependency for index-mode rules;
+  Gemini locked decision points at the one-line settings form in INSTALL/README.
+- Patch bump: no law text changed, no gate rule id added, no requirement reversed —
+  reimplementation + infrastructure + docs (see versioning policy: patch).
+
+### Verified
+
+- `scripts/check-laws.sh` exit 0 on this host (Linux, bash 5.x).
+- `scripts/selftest-gate.sh` exit 0; five consecutive identical summaries on the frozen tree.
+- Workflow validated with throwaway `actionlint` under `/tmp` (not PyYAML). Unquoted `on:`
+  retained for GitHub's parser.
+- macOS/Windows CI legs unproven until the first Actions run — predictions recorded before
+  that run (including Windows: symlink red-case fires via cacheinfo; twin is index-meaningful).
+- bash 3.2: enforced by `posix-shell-purity`; executed only where a 3.2 binary exists
+  (scheduled CI macOS `/bin/bash` — not available on this Linux host).
+
 ## [1.2.0] - 2026-07-25
 
 Theme: close the unguarded parallel writers and make the published coordinates real.
@@ -167,7 +235,8 @@ Theme: make the corpus survivable without a human maintainer, and make the gate 
 - Laws are written in English, as imperatives, and must be understandable without reading
   the rest of the repository.
 
-[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.1
 [1.2.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.0
 [1.1.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.1.0
 [1.0.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.0.0
