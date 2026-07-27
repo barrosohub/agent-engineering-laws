@@ -19,6 +19,10 @@ changes**.
 If killing legacy would require editing the new system's routing, matching, or naming,
 the boundary was drawn wrong. Redraw it.
 
+This allowlist is a fence, not the exemption law `attack-root-class` forbids: it holds
+only the new system's own scope, and anything outside it is refused interpretation
+rather than granted a quiet pass.
+
 ## Forbidden
 
 - Legacy command names, legacy field names, legacy tenant ids, or legacy error codes

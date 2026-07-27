@@ -148,9 +148,10 @@ This repository has two tiers with different contracts:
 ## Git
 
 The laws in this repository apply to work on this repository. In particular
-`laws/git-safety.md`: never stage, commit, amend, push, rebase, merge, stash, or create a
-pull request without an explicit per-operation imperative from the owner. A question about
-readiness is not authorization.
+`laws/git-safety.md`: never take an action you could not undo alone — staging, committing,
+amending, pushing, rebasing, merging, stashing, tagging a release, deleting data — without
+an explicit per-operation imperative from the owner. A readiness question is not
+authorization.
 
 ## Project context
 

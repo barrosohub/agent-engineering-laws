@@ -41,6 +41,12 @@ timeout.
 
 ## Degraded UX
 
-- Prefer a clear, generic failure over a half-rendered partial.
+- A partial you **cannot** describe is not a result. When a process was interrupted,
+  timed out, canceled, or has not reached its terminal boundary, fail the whole surface
+  with one clear, generic message. Never emit the half-rendered partial.
+- A partial you **can** describe is different: when one unit fails validation, ship the
+  rest and mark that unit's omission on the surface — do not fail the whole (see law
+  `legacy-state-tolerance`). If the surface cannot carry that mark, fail the whole and
+  name the unit that forced it; never trade a stated omission for an unstated one.
 - When severities differ across components, prefer **absence over fabrication**. Showing
   nothing is honest; inventing a value is not.

@@ -24,6 +24,94 @@ Gate rule ids are also a contract: any change to the emit-able set is at least m
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-07-27
+
+Theme: generalize git-safety from a version-control enumeration to the class it actually
+protects, resolve two contradictions that lived in the always-on file, and repair the
+advisory audit instrument whose own arithmetic was wrong in both directions.
+
+### Changed
+
+- `git-safety` widens from an enumeration of version-control verbs to two membership
+  tests — destroys state no committed ref restores; emits an effect you cannot recall —
+  with the version-control list kept verbatim as the highest-frequency example, never the
+  boundary. Forced by: no row in the routing surface fired on "about to destroy data",
+  so dropping a table, publishing a package, rotating a credential, or killing a live
+  process were all ungoverned. The list is a floor, not a ceiling: every previously listed
+  operation still needs authorization even if judged reversible, so the generalization can
+  only add cases, never subtract one. Not mechanizable: no gate rule can detect a relapse
+  into enumeration, so this is enforced by reading alone. The law grows to 82 lines — the
+  largest in the corpus and flagged by the advisory audit as "is it two laws?" — judged
+  one contract (per-operation authorization for acts you cannot reverse alone) with one
+  inventory of its instances; splitting would recreate the exact defect being fixed, since
+  the sibling law would then load only for an agent that had already classified its action.
+- `attack-root-class` clause 4 gains the discriminator its flat prohibition was missing: a
+  fail-closed enumeration of a unit's own scope is a fence and is required, not forbidden;
+  an enumeration of foreign names that grants unlisted instances a quiet pass is the
+  exemption the clause actually forbids. Forced by: `core/ALWAYS.md` stated the flat
+  prohibition at one line and the fence requirement at another, so every agent held a
+  contradiction in every session, and an agent that loaded only the prescribing law never
+  saw the reconciliation. `new-package-fence` and `new-legacy-boundary` each gain a short
+  pointer citing the test where the decision is actually made, so the fix reaches an agent
+  who loads only one side. `core/ALWAYS.md` line 26 is rewritten in place to state the
+  accepted shape rather than only the prohibition; the redundant restatement under "Prefer
+  executable contract" is deleted, since that law already cites `attack-root-class` — net
+  zero lines in the always-on file.
+- `lifecycle-concurrency`'s "Degraded UX" clause is scoped: a partial from a process that
+  never reached its terminal boundary (interrupted, timed out, canceled) fails whole and
+  generically; a partial from one unit that failed validation ships the rest with the
+  omission marked, falling back to a whole failure only if the surface cannot carry the
+  mark. Forced by: the unscoped "prefer a clear, generic failure over a half-rendered
+  partial" named no trigger and read as a blanket ban on every incomplete surface,
+  contradicting `legacy-state-tolerance`'s narrower, correctly-scoped "degrade the unit,
+  never the whole artifact for one malformed element." `legacy-state-tolerance` itself was
+  not touched — its own precondition ("fails validation") was already correct; the
+  unscoped clause was the defect.
+
+### Fixed
+
+- The advisory audit's imperative-density metric computed its numerator over the whole
+  file while its denominator excluded front matter, headings, and table rows — so every
+  law's mandatory `always: false` front-matter line matched the word "always" and bought
+  a phantom point no law had to earn. One law's true density was zero; the metric reported
+  4%. Fixed by computing both sides over the identical filtered line set.
+- The same metric also matched modal verbs (MUST, NEVER, ALWAYS, PREFER, REQUIRED) only
+  in their shouted, all-caps form, undercounting every law that phrased the identical
+  requirement in ordinary prose case. Fixed by matching case-insensitively. Corrected mean:
+  37% (was a phantom-inflated 32%); floor: 18%. Extending the verb list with additional
+  words (`may`, `owns`, `belongs`) was tried and rejected: `may` let quoted anti-pattern
+  examples ("metric X may only decrease") buy credit for `multi-axis-invariants` — the
+  exact law an independent audit had already identified as the corpus's least falsifiable.
+  Case-insensitivity fixed the bug; a longer word list introduced a worse one.
+- The acronym-drift check built its comparison dictionary by lowercasing the entire
+  corpus, including each acronym's own instance — so testing "does the lowercase form
+  appear in the corpus" was tautologically true for every acronym found, and the check
+  had never fired on a real one. Fixed by excluding all-caps tokens from the dictionary
+  before comparison. Now correctly surfaces API, ASCII, AST, CLI, DRY, KISS, RAII, TDD,
+  URL, UTF, and YAGNI. One acceptable false positive remains: a real word shouted for
+  emphasis exactly once, with no other lowercase instance in the corpus, also trips it —
+  noted in the tool's own output rather than hidden.
+
+### Forward agenda (not fixed here)
+
+The repaired density metric now flags `laws/multi-axis-invariants.md` (16%) and
+`laws/post-block-reflection.md` (17%) as genuinely low-directive, matching an independent
+audit's own strongest finding: `multi-axis-invariants` forbids nothing concrete, and
+`post-block-reflection`'s closing section restates `operational-evidence` and
+`reviewer-auto-gate` nearly verbatim. `laws/drift-documentation.md` (16%) is also flagged
+but judged a metric false positive on reading: its three numbered actions (Name, Explain,
+Route) are genuinely imperative, using verbs the tracked word list does not carry. Left
+for a future round rather than folded in here.
+
+### Verified
+
+- `check-laws`: PASS — 34 laws, 29 rules, corpus v1.7.0. No new rule; no law count change.
+- Five consecutive selftests, nothing else executing: identical `PASS — 56 checks`;
+  repository fingerprint unchanged across all five.
+- `audit-corpus.sh`: git-safety's 82-line flag and the three density flags above are the
+  only new signals; no new overlap pair.
+- `render-core` and `actionlint` clean.
+
 ## [1.6.0] - 2026-07-26
 
 Theme: admit request-ambiguity discipline, keep durable memory auditable, and bind the
