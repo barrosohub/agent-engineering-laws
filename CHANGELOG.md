@@ -540,7 +540,8 @@ start of the corpus; do not invent a tag.
 - Laws are written in English, as imperatives, and must be understandable without reading
   the rest of the repository.
 
-[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.7.0
 [1.6.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.6.0
 [1.5.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.5.0
 [1.3.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.3.0
