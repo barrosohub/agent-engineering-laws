@@ -57,6 +57,10 @@ Validate work on `develop`, where CI runs across all three operating systems. Pr
 `main` only when that validation is green: `main` is distribution through raw URLs, the
 installer, and GitHub Pages, and must never serve a red commit.
 
+The direction is absolute: every change starts on `develop`, and `main` receives commits
+only by promotion from `develop`. No commit is authored on `main` directly — not even
+release bookkeeping. The only ref created on `main` is the release tag itself.
+
 ---
 
 ## 2. The maintenance cycle
@@ -217,7 +221,33 @@ When a *new* mechanism appears that the corpus has no word for, prefer describin
 | minor | A law is added, or an existing law materially changes what it requires. A gate rule is added. Any change to the set of rule ids the gate can emit (ids are a parsed contract). |
 | patch | Wording, clarification, index or formatting fixes that change no requirement. |
 
+A version number is consumed by the **release act** — the annotated tag on the distribution
+branch — never by a working-tree edit. Until that tag exists, all changes accumulate under
+the single next version, and every bump judgement measures against the last released version.
+
 Every major release carries an old-id → new-id mapping table in `CHANGELOG.md`.
+
+### Release sequence
+
+1. Working tree complete: gates green, `VERSION` and `CHANGELOG.md` agree on the next version.
+2. Promote the commit to the distribution branch (`main`) only when validation on `develop`
+   is green across the operating systems CI covers.
+3. Run `scripts/verify-changelog-tags.sh` on the real repository (requires fetched tags).
+   This validates the PRIOR record — every already-published link and heading still resolves.
+   The release in progress is exempt by design (its heading equals `VERSION`); the CI job
+   re-checks it after step 6 closes the loop.
+4. Run `scripts/create-release-tag.sh <X.Y.Z>` on `main` with a **clean working tree** — the
+   script refuses a dirty tree, validates HEAD (the object the tag names, not the working
+   tree), and **stops before pushing**.
+5. The human decides whether to publish: run the printed `git push` command only with an
+   explicit imperative (`git-safety`). Publishing is never the script's decision.
+6. After the tag is published, add the `[X.Y.Z]` link definition and repoint `[Unreleased]`
+   to compare from `vX.Y.Z`. This bookkeeping commit starts on `develop` like every change
+   and reaches `main` by promotion — the branch direction has no exceptions. The link must
+   never precede its tag: the changelog-tag verifier fails any commit whose links name a
+   tag that does not exist yet, which is why this step follows the tag push instead of
+   riding in the release commit. This commit consumes no version number and needs no
+   changelog entry of its own.
 
 ---
 

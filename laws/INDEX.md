@@ -24,6 +24,7 @@ Every law is one file with a stable kebab-case id. Load a law only when the
 | `no-second-model` | No second model over deterministic candidates | `laws/no-second-model.md` | Adding a model stage that reviews, repairs, or reconciles another model's output |
 | `git-safety` | Git safety — no exceptions | `laws/git-safety.md` | Any git mutation (add, commit, push, reset, stash, rebase, merge) or PR/release creation |
 | `questions-are-not-commands` | Interpretation discipline — questions are not commands | `laws/questions-are-not-commands.md` | Interpreting whether the user authorized an irreversible action |
+| `resolve-ambiguity-first` | Resolve ambiguity before the work | `laws/resolve-ambiguity-first.md` | Interpreting a request that admits more than one reading with different deliverables |
 | `lifecycle-concurrency` | Lifecycle integrity and shared-state concurrency | `laws/lifecycle-concurrency.md` | Touching lifecycle, background jobs, locks, sessions, or visible progress state |
 | `observability-and-routing` | Observability at boundaries; route from canonical evidence | `laws/observability-and-routing.md` | Fixing a pipeline, classifying requests, or emitting identity-bound values |
 | `io-boundary` | I/O boundary safety | `laws/io-boundary.md` | Consuming external or untrusted data, especially in last-resort consumers |
@@ -39,7 +40,7 @@ Every law is one file with a stable kebab-case id. Load a law only when the
 | `long-term-memory` | Long-term memory stores universal laws | `laws/long-term-memory.md` | Storing a durable lesson for future sessions |
 | `engineering-hygiene` | Everyday engineering hygiene | `laws/engineering-hygiene.md` | Writing comments, deleting code, or claiming backward compatibility |
 
-**33 laws.**
+**34 laws.**
 
 ## Stability
 

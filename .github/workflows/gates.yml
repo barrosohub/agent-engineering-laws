@@ -65,6 +65,26 @@ jobs:
         run: |
           "$GATE_BASH" scripts/selftest-gate.sh
 
+  # Changelog link definitions must match annotated tags on the real repository.
+  # Not part of check-laws: selftest subjects are single-commit trees with no tags.
+  # actions/checkout does not fetch tags by default. Fetch them explicitly: without
+  # tags, every link fails (noisy red). A checker that iterated an empty local tag
+  # list instead of link definitions could pass vacuously — we iterate definitions,
+  # refuse zero links, and require annotated tags to be present.
+  verify-changelog-tags:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+      - name: verify-changelog-tags
+        run: bash scripts/verify-changelog-tags.sh
+
   # workflow_dispatch runs the three-OS selftest on demand, including the Windows
   # product-tier symlink prediction.
   selftest-scheduled:

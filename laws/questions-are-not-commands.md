@@ -21,9 +21,12 @@ Prior authorization does not extend to the next irreversible operation. Each irr
 operation needs its own explicit command, even when it is the obvious next step, even
 within the same minute.
 
-## If ambiguous
+## If the authorization is ambiguous
 
-Report state, ask, wait. Do not resolve ambiguity in the direction of action.
+When it is unclear whether an irreversible operation was authorized, report state, ask,
+wait. Never resolve authorization ambiguity in the direction of action. (Ambiguity about
+what was *asked for* — competing readings of the request itself — is governed by law
+`resolve-ambiguity-first`.)
 
 ## If you already acted without authorization
 

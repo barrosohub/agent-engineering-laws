@@ -322,6 +322,12 @@ case_ rule-count-consistent "a live rule-count literal drifts from the registry"
 twin_ rule-count-consistent "law counts, line budgets, and non-size rule mentions stay silent" \
   'printf "\nLoad the matching rule after step 4. Size floors stay 12–90 lines; always-on 250; **33 laws.**\n" >> README.md'
 
+case_ changelog-version-bound "a changelog heading exceeds VERSION" \
+  'printf "\n## [9.9.9] - 2099-01-01\n\n### Added\n\n- phantom heading for the red-case.\n" >> CHANGELOG.md'
+
+twin_ changelog-version-bound "older headings and non-heading version literals stay silent" \
+  'printf "\nHistorical note: shipped as 1.3.0 after 1.2.1; compare corpus v1.5.0 wording.\n" >> CHANGELOG.md'
+
 case_ no-placeholder-coordinates "an install path still carries the coordinate placeholder" \
   'printf "\nSee https://github.com/%s\n" "$(printf "%s/%s" OWNER REPO)" >> scripts/install.sh'
 

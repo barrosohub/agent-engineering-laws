@@ -2,7 +2,7 @@
 
 **Universal operating laws for coding agents.**
 
-A curated corpus of **33 durable engineering laws** — written as imperatives, free of any
+A curated corpus of **34 durable engineering laws** — written as imperatives, free of any
 product, vendor, language, or era — that a coding agent loads into whatever repository it is
 working in. Install once, and the agent stops making a specific, well-known class of
 mistakes.
@@ -94,7 +94,7 @@ order.
 | **Runtime correctness** | `lifecycle-concurrency` · `io-boundary` · `observability-and-routing` · `legacy-state-tolerance` |
 | **Boundaries** | `external-boundary` · `new-legacy-boundary` · `adapter-chain` · `external-failure-messages` |
 | **Safety** | `git-safety` · `questions-are-not-commands` |
-| **Process honesty** | `operational-evidence` · `post-block-reflection` · `reviewer-auto-gate` · `verify-live-file` · `drift-documentation` |
+| **Process honesty** | `operational-evidence` · `post-block-reflection` · `reviewer-auto-gate` · `verify-live-file` · `drift-documentation` · `resolve-ambiguity-first` |
 | **Craft** | `debugging` · `pinned-version-websearch` · `hermetic-artifacts` · `engineering-hygiene` · `rule-authoring` · `long-term-memory` |
 
 Full table with load conditions: [`laws/INDEX.md`](laws/INDEX.md).
@@ -177,7 +177,7 @@ corpus — each with its counter.
 
 | Script | Role | Blocks? |
 |---|---|---|
-| `scripts/check-laws.sh` | 28 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
+| `scripts/check-laws.sh` | 29 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
 | `scripts/selftest-gate.sh` | Proves every rule fires on its own violation, and that none fire on a clean corpus | **yes** |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
@@ -225,6 +225,9 @@ GitHub Pages serves the machine-readable entry point at
 invariant changes. **minor** — a law is added or materially changed; a gate rule is added;
 any change to the set of rule ids the gate can emit (ids are a parsed contract).
 **patch** — wording and clarifications that change no requirement.
+
+A version number is consumed by the annotated release tag on the distribution branch, never
+by a working-tree edit. Until released, changes accumulate under the single next version.
 
 Every major release carries an old-id → new-id mapping in [`CHANGELOG.md`](CHANGELOG.md).
 

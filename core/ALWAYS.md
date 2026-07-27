@@ -152,6 +152,7 @@ Do not preload all laws.
 | Add a parameter across caller/adapter/core | `agent-laws/laws/adapter-chain.md` |
 | Mutate git (add/commit/push/reset/stash/rebase/merge) or create PRs | `agent-laws/laws/git-safety.md` |
 | Judge whether the user authorized an irreversible action | `agent-laws/laws/questions-are-not-commands.md` |
+| Interpret a request that admits more than one reading with different deliverables | `agent-laws/laws/resolve-ambiguity-first.md` |
 | Touch lifecycle, jobs, locks, visible progress | `agent-laws/laws/lifecycle-concurrency.md` |
 | Fix a pipeline, classify requests, or emit identity-bound values | `agent-laws/laws/observability-and-routing.md` |
 | Consume external or untrusted data | `agent-laws/laws/io-boundary.md` |

@@ -87,13 +87,16 @@ unsupervised maintenance. Assume you are the only maintainer.
 5. Update `llms.txt`, the README group table, every live law-count literal
    (`laws/INDEX.md` footer, `README.md`, this file, `llms.txt`), and `CHANGELOG.md`.
 6. Bump `VERSION`: minor for a new law or any change to the set of rule ids the gate can
-   emit; patch for clarifications; major for law id changes.
+   emit; patch for clarifications; major for law id changes. A version number is consumed by
+   the annotated release tag, never by a working-tree edit — until release, accumulate under
+   the single next version.
 7. Run `scripts/check-laws.sh`.
 
 ## Editing an existing law
 
 - Sharpening wording is a patch. Changing what the law requires is a minor. Reversing it is
-  a major. Any change to the set of rule ids the gate can emit is at least minor.
+  a major. Any change to the set of rule ids the gate can emit is at least minor. Measure
+  bumps against the last released version, not against unreleased working-tree headings.
 - If a law grows past ~60 lines, ask whether it is two laws. Split rather than dilute.
 - Never weaken a law to accommodate a single project's convenience. Scope it or drop it.
 
@@ -101,7 +104,7 @@ unsupervised maintenance. Assume you are the only maintainer.
 
 | Script | Role | Blocks |
 |---|---|---|
-| `scripts/check-laws.sh` | 28 registered rules; findings print as `FAIL [rule-id] location — reason` | yes |
+| `scripts/check-laws.sh` | 29 registered rules; findings print as `FAIL [rule-id] location — reason` | yes |
 | `scripts/selftest-gate.sh` | Proves each rule fires on its own violation, and none fire on a clean corpus | yes |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
@@ -151,7 +154,7 @@ readiness is not authorization.
 
 ## Project context
 
-- **What this repository is:** a vendor-neutral corpus of 33 universal engineering laws for
+- **What this repository is:** a vendor-neutral corpus of 34 universal engineering laws for
   coding agents, distributed as an always-on file plus lazy-loaded law files.
 - **Stack:** Markdown and shell. Product tier executes nothing. Tooling tier requires bash
   3.2+, POSIX coreutils, grep, sed, awk, and git (for `product-tier-inert` index modes).

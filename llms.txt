@@ -1,6 +1,6 @@
 # agent-engineering-laws
 
-> Universal operating laws for coding agents: 33 timeless, vendor-neutral engineering laws
+> Universal operating laws for coding agents: 34 timeless, vendor-neutral engineering laws
 > distributed as a short always-on file plus lazy-loaded law files. Install into any
 > repository, on any stack, for any agent that can read a file and follow an instruction.
 
@@ -9,7 +9,7 @@ the repository points at it and never copies it.
 
 **Reading protocol.** Fetch `core/ALWAYS.md` first — it is the whole operating core and
 carries the load table. Fetch an individual law only when the task at hand matches its
-condition below. Do not fetch all 33 laws; that defeats the design.
+condition below. Do not fetch all 34 laws; that defeats the design.
 
 **Raw base URL.** `https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/`
 Every path below is relative to that base.
@@ -21,7 +21,7 @@ The llms.txt convention expects a stable HTTP URL; that is it.
 ## Entry points
 
 - [core/ALWAYS.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/core/ALWAYS.md): the always-on file. Install as `./AGENTS.md` in the target repository. ~180 lines: operating core, the mandatory load table, and the project-context stub.
-- [laws/INDEX.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/INDEX.md): `id | title | path | when_to_load` for all 33 laws. The routing table.
+- [laws/INDEX.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/INDEX.md): `id | title | path | when_to_load` for all 34 laws. The routing table.
 - [INSTALL.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/INSTALL.md): paste-ready imperative install prompt for any coding agent, plus curl / script / subtree / submodule fallbacks.
 - [README.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/README.md): mission, design principles, compatibility matrix, gate description.
 - [MAINTENANCE.md](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/MAINTENANCE.md): the self-maintenance protocol — constitution, maintenance cycle, admission and retirement tests, terminology-drift protocol, failure modes of autonomous maintenance.
@@ -49,6 +49,7 @@ Path form: `laws/<id>.md`. Load one when you are about to do the thing described
 - [no-second-model](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/no-second-model.md): adding a model stage that reviews, repairs, or reconciles another model's output.
 - [git-safety](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/git-safety.md): any git mutation, or creating pull requests and releases.
 - [questions-are-not-commands](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/questions-are-not-commands.md): judging whether the user authorized an irreversible action.
+- [resolve-ambiguity-first](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/resolve-ambiguity-first.md): interpreting a request that admits more than one reading with different deliverables.
 - [lifecycle-concurrency](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/lifecycle-concurrency.md): touching lifecycle, background jobs, locks, sessions, or visible progress.
 - [observability-and-routing](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/observability-and-routing.md): fixing a pipeline, classifying requests, or emitting identity-bound values.
 - [io-boundary](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/io-boundary.md): consuming external or untrusted data.

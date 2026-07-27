@@ -35,6 +35,12 @@ A change touching roughly more than 20 files MUST ship, before any "ready" claim
 2. A **mechanical guard** comparing actually-changed files against the manifest, with its
    own self-test red-case.
 
+## Verification cadence
+
+Never stack an unverified change on top of another unverified change: run the available
+check between them. A green result expires on the next edit in scope — law
+`operational-evidence` owns the claim-time counterpart of this rule.
+
 ## Review
 
 Reviewer endorsement does not replace crossing the diff against the owner's original
