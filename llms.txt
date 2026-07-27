@@ -47,7 +47,7 @@ Path form: `laws/<id>.md`. Load one when you are about to do the thing described
 - [new-legacy-boundary](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/new-legacy-boundary.md): cutting a new system over beside a legacy one.
 - [adapter-chain](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/adapter-chain.md): adding a parameter across caller, interface, adapter, and core.
 - [no-second-model](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/no-second-model.md): adding a model stage that reviews, repairs, or reconciles another model's output.
-- [git-safety](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/git-safety.md): any git mutation, or creating pull requests and releases.
+- [git-safety](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/git-safety.md): destroying or publishing state no committed ref restores — git mutations, releases, drops, credential rotation, real sends.
 - [questions-are-not-commands](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/questions-are-not-commands.md): judging whether the user authorized an irreversible action.
 - [resolve-ambiguity-first](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/resolve-ambiguity-first.md): interpreting a request that admits more than one reading with different deliverables.
 - [lifecycle-concurrency](https://raw.githubusercontent.com/barrosohub/agent-engineering-laws/main/laws/lifecycle-concurrency.md): touching lifecycle, background jobs, locks, sessions, or visible progress.

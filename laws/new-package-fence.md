@@ -25,6 +25,10 @@ If the answer is "none", ship the fence in the SAME change. Not in a follow-up.
 - Ship a **red-case** (an illegal import fails the guard) and an **over-match twin**
   (a legitimate import passes).
 
+This allowlist is a fence, not the exemption law `attack-root-class` forbids: it holds
+the fenced unit's own names, and an unlisted import fails closed. An entry that instead
+buys one foreign name a pass is the exemption, not the fence.
+
 ## Applies to
 
 New services, new adapters, new test-support packages that production can accidentally

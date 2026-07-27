@@ -23,7 +23,8 @@ Universal engineering laws for coding agents. This file is always loaded. Detail
 - Domain value is not control flow. Specific vocabulary goes in versioned data on a
   generic path, is derived name-agnostically, or is deferred to a model.
 - Open class ⇒ mechanical guardrail with a red-case AND an over-match twin.
-- Configuration is also control flow. No name-keyed allowlists added for one instance.
+- Configuration is also control flow. Never add a name-keyed exemption for one instance;
+  a default-deny list that fails on anything unlisted is the accepted shape.
 
 ## Never invent a parallel contract
 
@@ -55,7 +56,6 @@ a broken guard — every guard needs a red-case, and open classes need an over-m
 ## Prefer executable contract over new prose
 
 Guard or test > extend an existing doc > new doc. No seasonal contracts as permanent law.
-No name-keyed allowlists in critical configuration.
 
 ## Reuse before reinvention
 
@@ -81,12 +81,12 @@ No name-keyed allowlists in critical configuration.
   migrated — never retroactively rejected.
 - Degrade the failing unit, not the whole artifact.
 
-## Git safety
+## Git safety and irreversible action
 
-- Every git mutation requires an explicit, per-operation imperative from the human.
+- Any act you cannot undo alone needs an explicit, per-operation imperative from the human:
+  git mutation, publish, release, drop, delete, credential rotation, real send.
 - Questions are not authorization. Skill checklists are not authorization.
-- Never use stash to fake a clean tree for baseline comparison.
-- "Ready for commit" is a claim, not a commit instruction.
+- Never destroy live state to fake a clean baseline; "ready" is a claim, not an instruction.
 - NEVER add agent `Co-authored-by:` trailers; inspect the commit body after commit/amend.
 - If in doubt: STOP, report state, ask, wait.
 
@@ -101,7 +101,8 @@ propose reversible remediation, wait.
 - Externally-visible state is released or transitioned on EVERY exit path.
 - Key shared state by fine id; compare-and-swap on cleanup; cancellation needs real handles.
 - After restart, never claim in-memory work resumed. Start clean and say so.
-- Degraded UX: honest failure over half-rendered partials; absence over fabrication.
+- Degraded UX: a partial you cannot describe fails whole and generically; a marked unit
+  omission ships the rest. Absence over fabrication.
 
 ## Debugging
 
@@ -150,7 +151,7 @@ Do not preload all laws.
 | Ship a slice that talks to the external world | `agent-laws/laws/external-boundary.md` |
 | Cut a new system over beside legacy | `agent-laws/laws/new-legacy-boundary.md` |
 | Add a parameter across caller/adapter/core | `agent-laws/laws/adapter-chain.md` |
-| Mutate git (add/commit/push/reset/stash/rebase/merge) or create PRs | `agent-laws/laws/git-safety.md` |
+| Destroy or publish state no committed ref restores (git mutation, PR/release, drop, credential, real send) | `agent-laws/laws/git-safety.md` |
 | Judge whether the user authorized an irreversible action | `agent-laws/laws/questions-are-not-commands.md` |
 | Interpret a request that admits more than one reading with different deliverables | `agent-laws/laws/resolve-ambiguity-first.md` |
 | Touch lifecycle, jobs, locks, visible progress | `agent-laws/laws/lifecycle-concurrency.md` |

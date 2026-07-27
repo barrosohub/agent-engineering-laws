@@ -86,14 +86,27 @@ if [ -n "$BRANDS" ]; then
 else
   inf "no brand-shaped tokens found"
 fi
-LOWER=$(cat "${LAWS[@]}" | tr '[:upper:]' '[:lower:]' | grep -oE '\b[a-z]{3,}\b' | sort -u)
+# An acronym reads as era-bound jargon if its word form never appears as ordinary
+# prose anywhere else in the corpus. Build that dictionary EXCLUDING every all-caps
+# token, so an acronym's own occurrence can never certify itself: the prior version
+# lowercased the whole corpus including the acronym's own instance, so the membership
+# test always passed and this check could never fire on anything.
+PROSE_WORDS=$(awk '{
+  for (i = 1; i <= NF; i++) {
+    tok = $i
+    gsub(/[^A-Za-z]/, "", tok)
+    if (tok == "" || tok ~ /^[A-Z][A-Z][A-Z]+$/) continue
+    print tolower(tok)
+  }
+}' "${LAWS[@]}" | sort -u)
 ACRONYM=$(for t in $(grep -ohE '\b[A-Z]{3,}\b' "${LAWS[@]}" | sort -u); do
             low=$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')
-            printf '%s\n' "$LOWER" | grep -qx "$low" || printf '%s ' "$t"
+            printf '%s\n' "$PROSE_WORDS" | grep -qx "$low" || printf '%s ' "$t"
           done)
 if [ -n "$ACRONYM" ]; then
-  sig "acronyms that appear only in upper case — will these read in another era?"
+  sig "acronyms with no ordinary-prose form elsewhere in the corpus — will these read in another era?"
   inf "  $ACRONYM"
+  inf "  a real word shouted for emphasis exactly once can also trip this; read before acting"
 fi
 
 # --- imperative density -------------------------------------------------------
@@ -102,10 +115,22 @@ hdr "imperative density (share of prose lines carrying a directive)"
 density_file=$tmp/density
 : > "$density_file"
 total_pct=0
+# Case-insensitive on purpose: this corpus shouts MUST/NEVER for emphasis and also
+# writes the identical modal in ordinary prose case ("must be reviewable"). Matching
+# only the shouted form undercounted every law that phrases a requirement in plain
+# text — a bug the front-matter fix below would otherwise have left in place.
+# Extending this word list was tried and rejected: adding "may" let quoted anti-pattern
+# examples ("metric X may only decrease") buy credit for the exact law that most needs
+# to be flagged. Case-insensitivity is the fix; a longer list is not.
+VERB_PATTERN='\b(must|never|should|always|do not|prefer|use|keep|fix|add|ship|assert|verify|report|stop|wait|delete|avoid|treat|name|state|include|run|read|write|reject|forbidden|required)\b'
 for f in "${LAWS[@]}"; do
   prose=$(grep -cvE '^\s*$|^#|^---|^[a-z_]+:|^\|' "$f")
   [ "$prose" -gt 0 ] || continue
-  imp=$(grep -cE '\b(MUST|NEVER|SHOULD|Never|Always|Do NOT|Prefer|Use|Keep|Fix|Add|Ship|Assert|Verify|Report|Stop|Wait|Delete|Avoid|Treat|Name|State|Include|Run|Read|Write|Reject|forbidden|required|do not|never|always|prefer)\b' "$f")
+  # Numerator and denominator MUST come from the identical filtered line set. The
+  # prior version counted the numerator over the WHOLE file, so front matter's
+  # `always: false` — present in every law, itself never a directive — matched the
+  # word "always" and bought every single law a phantom point.
+  imp=$(grep -vE '^\s*$|^#|^---|^[a-z_]+:|^\|' "$f" | grep -icE "$VERB_PATTERN")
   pct=$((imp * 100 / prose))
   printf '%s\t%s\n' "$f" "$pct" >> "$density_file"
   total_pct=$((total_pct + pct))

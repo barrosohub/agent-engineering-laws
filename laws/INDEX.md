@@ -22,7 +22,7 @@ Every law is one file with a stable kebab-case id. Load a law only when the
 | `new-legacy-boundary` | A new system declares its own scope | `laws/new-legacy-boundary.md` | Cutting a new system over beside a legacy one |
 | `adapter-chain` | New parameters cross the whole adapter chain | `laws/adapter-chain.md` | Adding a parameter across caller, interface, adapter, and core |
 | `no-second-model` | No second model over deterministic candidates | `laws/no-second-model.md` | Adding a model stage that reviews, repairs, or reconciles another model's output |
-| `git-safety` | Git safety — no exceptions | `laws/git-safety.md` | Any git mutation (add, commit, push, reset, stash, rebase, merge) or PR/release creation |
+| `git-safety` | Git safety and irreversible action — no exceptions | `laws/git-safety.md` | About to destroy or publish state no committed ref restores — git mutation, PR/release, dropping a store or tree, rotating a credential, a real send |
 | `questions-are-not-commands` | Interpretation discipline — questions are not commands | `laws/questions-are-not-commands.md` | Interpreting whether the user authorized an irreversible action |
 | `resolve-ambiguity-first` | Resolve ambiguity before the work | `laws/resolve-ambiguity-first.md` | Interpreting a request that admits more than one reading with different deliverables |
 | `lifecycle-concurrency` | Lifecycle integrity and shared-state concurrency | `laws/lifecycle-concurrency.md` | Touching lifecycle, background jobs, locks, sessions, or visible progress state |

@@ -34,11 +34,21 @@ Situational rules and short blankets are forbidden.
    requires naming that item in critical configuration, the rule is wrong — make it
    generic by category, or drop the need.
 
+   **Fence, not exemption.** One enumeration is required, not forbidden: a fail-closed
+   declaration of a unit's OWN scope, where anything undeclared is refused or handed
+   off untouched. Ask whose names the list holds — the declaring unit's own, or
+   foreign ones borrowed from siblings, tenants, or legacy — and what an instance
+   nobody listed gets: refused, or quietly granted. Own names plus refusal is a fence,
+   and a new unit MUST be declared there in the same change (see law
+   `new-package-fence` and law `new-legacy-boundary`). Foreign names, a quiet grant,
+   or an entry that also carries a route, threshold, or feature state is the
+   exemption this law forbids.
+
 ## Rejected shapes
 
 - `if term == "<observed word>"` and its regex equivalents.
 - A per-tenant/per-file/per-metric special case added because one report mentioned it.
-- An allowlist entry that must grow every time a sibling instance appears.
+- A fail-open list that must grow every time a sibling instance appears.
 - "We will remember to handle the next one" with no gate guard.
 
 ## Accepted shapes
@@ -47,3 +57,4 @@ Situational rules and short blankets are forbidden.
 - A contract removed because it was never load-bearing.
 - A parser fixed at the boundary where the shape was misread.
 - A guard that fails the build for the whole class, not the one instance.
+- A fail-closed fence: any unit it does not declare fails the build.
