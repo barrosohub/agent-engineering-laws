@@ -9,12 +9,77 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **major** — a law id is renamed or removed, or a law reverses its guidance.
   Breaking for any consumer whose lazy-load table or tooling references the id.
   A major release MUST include an old-id → new-id mapping table.
-- **minor** — a new law is added, or an existing law is materially extended.
+- **minor** — a new law is added, an existing law is materially extended, a gate rule is
+  added, or the set of rule ids the gate can emit changes. Emit-able rule ids are a
+  parsed contract (consumers parse `FAIL [<rule-id>]`).
 - **patch** — clarifications, wording, typos, index and formatting fixes.
 
 Law ids are a contract. Do not rename one without a major bump and a mapping entry.
+Gate rule ids are also a contract: any change to the emit-able set is at least minor.
 
 ## [Unreleased]
+
+## [1.5.0] - 2026-07-26
+
+Theme: register structural filter guards, lock rule-count literals, and end the patch-vs-minor
+ambiguity on emit-able gate rule ids.
+
+### Added
+
+- Gate rule `structure` (META) and `filter-rule-evaluated` so FAIL [structure] early exits and
+  RULE_TOUCHED are registry-visible; `filter-rule-evaluated` has a red-case that deletes its
+  evaluation section under `--rule`. Accurate scope for RULE_TOUCHED: sharpens diagnosis —
+  the same hole still surfaces as DEAD RULE without it.
+- Gate rule `rule-count-consistent` compares live rule-count literals in `README.md` and
+  `AGENTS.md` to `${#GATE_RULES[@]}`. Historical changelog counts are excluded. Twin proves
+  silence on law counts, line budgets, and a number near "rule" that does not assert registry
+  size.
+
+### Changed
+
+- Minor bump `1.4.0` → `1.5.0` (25 → 28 registered ids). One failure moved from `[structure]`
+  to `[filter-rule-evaluated]`; two prior ids plus `rule-count-consistent` are new emit-able
+  ids. Single bump covers this whole set — do not bump twice for the count rule.
+- Versioning policy sharpened (CHANGELOG, `MAINTENANCE.md`, `README.md`, `AGENTS.md`): any
+  change to the set of rule ids the gate can emit is at least a minor bump, because those ids
+  are a parsed output contract. Forced by: this exact judgement was contested (patch reading
+  vs minor reading); the minor reading won.
+
+### Verified
+
+- Five frozen selftests: identical `PASS — 54 checks` (delta from prior 52: +1 red-case and
+  +1 twin for `rule-count-consistent`). `check-laws` 28 rules, audit and render green;
+  `laws/` byte-identical to HEAD.
+
+## [1.4.0] - 2026-07-26
+
+Theme: make individual gate rules runnable and make selftest registration bidirectional.
+
+### Added
+
+- `scripts/check-laws.sh --rule <id>` runs only the selected registered rule, filters its
+  findings and summary, and exits 2 with the unknown name when the id is not registered.
+  Forced by: Phase 2 acceptance requires focused rule diagnosis without duplicating gate
+  implementations.
+- Gate rule `case-rules-registered` (24 → 25) rejects any real `case_` line in the selftest
+  whose id is absent from `GATE_RULES`; its twin proves commented examples stay silent.
+  Forced by: one-way selftest coverage could miss an unregistered red-case.
+- `workflow_dispatch` runs the scheduled three-OS selftest on demand, including the Windows
+  product-tier symlink prediction.
+
+### Changed
+
+- `MAINTENANCE.md` now requires validation on `develop` across three operating systems before
+  promotion to `main`, which is the raw-URL, installer, and GitHub Pages distribution branch.
+
+### Verified
+
+- Selftest wall-clock: before filter ~117–146s (3 runs); after ~45–53s (3 runs); freeze five
+  consecutive PASS at 51 checks with identical summaries.
+- Dead-rule proof: gutting `english-only` yields `DEAD RULE [english-only]` under `--rule`.
+- Unknown `--rule` exits 2 naming the id; an unregistered `case_` fails `case-rules-registered`.
+- Twin-alive: flipping the `case-rules-registered` twin mutation to a real `case_` yields
+  `OVER-MATCH`. `actionlint` clean on `.github/workflows/gates.yml`.
 
 ## [1.3.0] - 2026-07-26
 
@@ -281,7 +346,9 @@ start of the corpus; do not invent a tag.
 - Laws are written in English, as imperatives, and must be understandable without reading
   the rest of the repository.
 
-[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.5.0
+[1.4.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.4.0
 [1.3.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.3.0
 [1.2.1]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.1
 [1.2.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.0

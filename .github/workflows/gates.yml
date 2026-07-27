@@ -1,12 +1,13 @@
 name: gates
-# Cost split: check-laws (~3.5s) runs on all three OSes every push/PR. Selftest (~2 min,
-# 46 full-gate subjects) runs on Ubuntu only per push (same-repo pull_request skips this
-# job by design — push already covers the head; fork PRs still run it). If branch
-# protection ever requires the selftest check, a skipped job will block merges; keep that
-# in mind before requiring it. The full three-OS selftest — including macOS /bin/bash 3.2 —
-# is scheduled, so the bash 3.2 proof survives without billing macOS minutes on every push.
-# Do not "simplify" this back into one matrix.
+# Cost split: check-laws runs on all three OSes every push/PR. Selftest runs on Ubuntu only
+# per push (same-repo pull_request skips this job by design — push already covers the head;
+# fork PRs still run it). Red-cases use the single-rule gate; clean and twin subjects use
+# the full gate. If branch protection ever requires the selftest check, a skipped job will
+# block merges; keep that in mind before requiring it. The full three-OS selftest —
+# including macOS /bin/bash 3.2 — is scheduled, so the bash 3.2 proof survives without
+# billing macOS minutes on every push. Do not "simplify" this back into one matrix.
 on:
+  workflow_dispatch:
   push:
     branches:
       - "**"
@@ -64,8 +65,10 @@ jobs:
         run: |
           "$GATE_BASH" scripts/selftest-gate.sh
 
+  # workflow_dispatch runs the three-OS selftest on demand, including the Windows
+  # product-tier symlink prediction.
   selftest-scheduled:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:

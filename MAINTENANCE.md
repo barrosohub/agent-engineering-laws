@@ -35,7 +35,7 @@ defect. Each is mechanically enforced where enforcement is possible.
 | C5 | No law is dated: no years, no version literals, no era words. | `temporal-coupling` |
 | C6 | The always-on file stays within its line budget; detail lives in `laws/`. | `always-on-size` |
 | C7 | Every law is reachable from both the index and the load table. | `law-indexed`, `lazy-load-complete` |
-| C8 | Every gate rule has a red-case that proves it fires. | `selftest-coverage`, `selftest-gate.sh` |
+| C8 | Every gate rule has a red-case that proves it fires, and every real selftest case names a registered rule. | `selftest-coverage`, `case-rules-registered`, `selftest-gate.sh` |
 | C9 | Compatibility files are pointers, never copies of the corpus. | `claude-pointer` |
 | C10 | The repository runs from a clean clone with no network and no package manager. | §8 recovery drill |
 | C11 | Product tier executes nothing (committed modes: no symlink, no executable bit under product paths). | `product-tier-inert` |
@@ -53,7 +53,9 @@ merely *removes* enforcement is not an amendment — it is erosion. Reject it.
 `main` is the **distribution branch**. Every published raw URL and the installer resolve
 against `main`. Promoting work to `main` is therefore a release act, not routine housekeeping:
 the always-on file, law corpus, and install paths consumers fetch are whatever `main` has.
-Do not treat a merge to `main` as informal integration.
+Validate work on `develop`, where CI runs across all three operating systems. Promote to
+`main` only when that validation is green: `main` is distribution through raw URLs, the
+installer, and GitHub Pages, and must never serve a red commit.
 
 ---
 
@@ -107,7 +109,8 @@ A corpus change is complete only when all of these are true:
    `readme-groups-complete` (exactly once per id).
 6. Every live law-count literal updated (`laws/INDEX.md` footer, `README.md`, `AGENTS.md`,
    `llms.txt`) — enforced by `law-count-consistent`. Historical `CHANGELOG.md` counts of
-   past releases are not rewritten.
+   past releases are not rewritten. Every live rule-count literal updated (`README.md`,
+   `AGENTS.md`) — enforced by `rule-count-consistent`.
 7. Any new gate rule added to `GATE_RULES` in `scripts/check-laws.sh` **with** a matching
    `case_ <rule>` in `scripts/selftest-gate.sh`.
 8. `VERSION` bumped per §6.
@@ -211,7 +214,7 @@ When a *new* mechanism appears that the corpus has no word for, prefer describin
 | Bump | When |
 |---|---|
 | major | A law id is renamed, retired, or reverses its guidance. A constitutional invariant changes. |
-| minor | A law is added, or an existing law materially changes what it requires. A gate rule is added. |
+| minor | A law is added, or an existing law materially changes what it requires. A gate rule is added. Any change to the set of rule ids the gate can emit (ids are a parsed contract). |
 | patch | Wording, clarification, index or formatting fixes that change no requirement. |
 
 Every major release carries an old-id → new-id mapping table in `CHANGELOG.md`.
@@ -249,8 +252,9 @@ decidable. What *is* achievable — and what this repository implements — is a
 - `scripts/selftest-gate.sh` proves every declared rule fires on its own violation
   (red-case) and that no rule fires on a clean corpus (over-match twin). A rule that stops
   working is reported as a **dead rule**.
-- The `selftest-coverage` rule links the two: a rule cannot be deleted from the gate without
-  also deleting its red-case, and that deletion is a visible, recordable act.
+- The `selftest-coverage` and `case-rules-registered` rules link the registry and cases in
+  both directions: a rule cannot be deleted from the gate without also deleting its red-case,
+  and an unregistered real case cannot hide in the selftest.
 - `scripts/audit-corpus.sh` is **advisory, never blocking**. It reports judgement-dependent
   signals — overlap, vocabulary drift, structural decay. Blocking on a heuristic would teach
   maintainers to fight the gate; that is how gates die.

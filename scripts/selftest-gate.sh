@@ -189,7 +189,7 @@ case_() {
       "$rule" "$mut_rc" "$desc"
     FAILED=$((FAILED + 1)); return
   fi
-  out=$(cd "$dir" && bash scripts/check-laws.sh 2>&1); rc=$?
+  out=$(cd "$dir" && bash scripts/check-laws.sh --rule "$rule" 2>&1); rc=$?
   if [ "$rc" -eq 0 ]; then
     printf '  DEAD RULE  [%s] gate passed despite: %s\n' "$rule" "$desc"; FAILED=$((FAILED + 1)); return
   fi
@@ -231,6 +231,20 @@ if (cd "$CLEAN" && bash scripts/check-laws.sh >/dev/null 2>&1); then
 else
   printf '  OVER-MATCH [all] clean corpus FAILS the gate:\n'
   (cd "$CLEAN" && bash scripts/check-laws.sh 2>&1 | grep 'FAIL \[' | sed 's/^/               /')
+  FAILED=$((FAILED + 1))
+fi
+
+# --- red-case: structure rejects an unknown --rule (META; not a case_ subject) -
+UNKNOWN_FILTER_OUT=$(cd "$CLEAN" && bash scripts/check-laws.sh --rule not-a-registered-rule 2>&1)
+UNKNOWN_FILTER_RC=$?
+if [ "$UNKNOWN_FILTER_RC" -ne 0 ] \
+  && printf '%s\n' "$UNKNOWN_FILTER_OUT" | grep -qF "FAIL [structure]" \
+  && printf '%s\n' "$UNKNOWN_FILTER_OUT" | grep -qF "not-a-registered-rule"; then
+  printf '  red-case   [structure] unknown --rule names are rejected\n'
+  PASSED=$((PASSED + 1))
+else
+  printf '  FAILED CASE [structure] unknown --rule was not rejected clearly\n'
+  printf '%s\n' "$UNKNOWN_FILTER_OUT" | sed 's/^/               /'
   FAILED=$((FAILED + 1))
 fi
 
@@ -281,6 +295,18 @@ case_ url-in-law "a law depends on a URL that can rot" \
 case_ claude-pointer "the compatibility file becomes a copy instead of a pointer" \
   'rm -f CLAUDE.md && cp AGENTS.md CLAUDE.md'
 
+case_ case-rules-registered "a real selftest case names an unregistered rule" \
+  'printf "%s\n" "case_ not-a-real-rule \"x\" '\''true'\''" >> scripts/selftest-gate.sh'
+
+twin_ case-rules-registered "a commented selftest case stays ignored" \
+  'printf "%s\n" "# case_ not-a-real-rule \"x\" '\''true'\''" >> scripts/selftest-gate.sh'
+
+# Deletes the evaluation section while leaving filter-rule-evaluated in GATE_RULES.
+# Without RULE_TOUCHED the same hole still shows as DEAD RULE; this guard names the
+# missing evaluation directly.
+case_ filter-rule-evaluated "a registered rule has no evaluation section under --rule" \
+  'awk "/^if section_wanted filter-rule-evaluated; then\$/ { s=1; next } s && /^fi\$/ { s=0; next } !s" scripts/check-laws.sh > t && mv t scripts/check-laws.sh'
+
 case_ llms-txt-complete "a law becomes absent from llms.txt" \
   'grep -v "laws/kiss-tests.md" llms.txt > l && mv l llms.txt'
 
@@ -289,6 +315,12 @@ case_ law-count-consistent "a live count literal drifts from the disk count" \
 
 twin_ law-count-consistent "non-count numbers beside the word law stay silent" \
   'printf "\nEach law stays roughly 20–60 lines; the always-on budget is 250 lines.\n" >> README.md'
+
+case_ rule-count-consistent "a live rule-count literal drifts from the registry" \
+  'n=$(awk "/^GATE_RULES=\(/,/^\)/" scripts/check-laws.sh | tr " " "\n" | grep -cE "^[a-z0-9-]+$"); w=$((n - 1)); sed "s/$n registered rules/$w registered rules/" AGENTS.md > t && mv t AGENTS.md'
+
+twin_ rule-count-consistent "law counts, line budgets, and non-size rule mentions stay silent" \
+  'printf "\nLoad the matching rule after step 4. Size floors stay 12–90 lines; always-on 250; **33 laws.**\n" >> README.md'
 
 case_ no-placeholder-coordinates "an install path still carries the coordinate placeholder" \
   'printf "\nSee https://github.com/%s\n" "$(printf "%s/%s" OWNER REPO)" >> scripts/install.sh'

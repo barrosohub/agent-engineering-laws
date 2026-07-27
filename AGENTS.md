@@ -86,13 +86,14 @@ unsupervised maintenance. Assume you are the only maintainer.
    table.
 5. Update `llms.txt`, the README group table, every live law-count literal
    (`laws/INDEX.md` footer, `README.md`, this file, `llms.txt`), and `CHANGELOG.md`.
-6. Bump `VERSION`: minor for a new law, patch for clarifications, major for id changes.
+6. Bump `VERSION`: minor for a new law or any change to the set of rule ids the gate can
+   emit; patch for clarifications; major for law id changes.
 7. Run `scripts/check-laws.sh`.
 
 ## Editing an existing law
 
 - Sharpening wording is a patch. Changing what the law requires is a minor. Reversing it is
-  a major.
+  a major. Any change to the set of rule ids the gate can emit is at least minor.
 - If a law grows past ~60 lines, ask whether it is two laws. Split rather than dilute.
 - Never weaken a law to accommodate a single project's convenience. Scope it or drop it.
 
@@ -100,25 +101,28 @@ unsupervised maintenance. Assume you are the only maintainer.
 
 | Script | Role | Blocks |
 |---|---|---|
-| `scripts/check-laws.sh` | 23 registered rules; findings print as `FAIL [rule-id] location — reason` | yes |
+| `scripts/check-laws.sh` | 28 registered rules; findings print as `FAIL [rule-id] location — reason` | yes |
 | `scripts/selftest-gate.sh` | Proves each rule fires on its own violation, and none fire on a clean corpus | yes |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
 Rules cover: index integrity, front-matter ids, H1 titles, duplicate titles, law size floor
 and ceiling, load-table completeness and resolution, cross-reference resolution, location
 coupling, always-on size budget, environment coupling, temporal coupling, URLs in laws,
-compatibility-file shape, gate self-coverage, `llms.txt` bijection, README group-table
-bijection, live law-count consistency, unresolved coordinate placeholders, tooling shell
-purity (POSIX `sh` + bash 3.2), American-English orthography, product-tier inertness, and
-braced expansions before non-ASCII bytes (`unbraced-nonascii`).
+compatibility-file shape, gate self-coverage and inverse selftest-case registration,
+`llms.txt` bijection, README group-table bijection, live law-count consistency, unresolved
+coordinate placeholders, tooling shell purity (POSIX `sh` + bash 3.2), American-English
+orthography, product-tier inertness, and braced expansions before non-ASCII bytes
+(`unbraced-nonascii`).
 
 `README.md`, `INSTALL.md`, `MAINTENANCE.md`, `CHANGELOG.md` and `scripts/` are excluded from
 the coupling scans on purpose: they must be able to NAME what is out of scope in order to
 forbid it.
 
-**A rule cannot be deleted silently.** `selftest-coverage` requires every rule in
-`GATE_RULES` to have a matching `case_ <rule>` red-case. Removing a rule means removing its
-red-case too, which is a visible act that `MAINTENANCE.md` §1 requires you to record.
+**A rule cannot be deleted silently.** `selftest-coverage` requires every non-meta rule in
+`GATE_RULES` to have a matching `case_ <rule>` red-case. Meta rules (`selftest-coverage`,
+`structure`) are declared in `GATE_RULES_META` so they stay registry-visible without a
+self-mutating case. Removing a rule means removing its case or its meta declaration, which
+is a visible act that `MAINTENANCE.md` §1 requires you to record.
 
 If the gate fails, decide which is wrong — the corpus or the gate — and say which in the
 change record. Never relocate content to dodge a scan, and never loosen a pattern to make a

@@ -11,9 +11,10 @@
 #     ok   [<rule-id>] <summary>
 # Parse on the bracketed rule id, never on prose.
 #
-# Every rule declared in GATE_RULES must have a red-case in scripts/selftest-gate.sh.
-# That coverage is itself a rule (selftest-coverage), so a rule cannot be deleted from
-# this gate without the deletion becoming visible. Run both:
+# Every rule declared in GATE_RULES must have a red-case in scripts/selftest-gate.sh, and
+# case-rules-registered checks the inverse direction. That coverage is itself a rule
+# (selftest-coverage), so a rule cannot be deleted from this gate without the deletion
+# becoming visible. Run both:
 #     scripts/check-laws.sh && scripts/selftest-gate.sh
 #
 # Dependencies: bash, POSIX coreutils, grep, sed, awk. No network. No package manager.
@@ -25,20 +26,60 @@ export LC_ALL=C
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT" || exit 2
-[ -d laws ] && [ -f core/ALWAYS.md ] || { echo "FAIL [structure] repository layout not found" >&2; exit 2; }
 
 # --- rule registry ------------------------------------------------------------
 # Every id here MUST have a red-case in scripts/selftest-gate.sh, except those listed
 # in GATE_RULES_META (rules that verify the gate itself and cannot self-mutate).
+# `structure` names the FAIL [structure] early-exit guards (args, layout, unknown
+# --rule). They cannot be injected via a normal case_ mutation of the corpus, so they
+# sit in META like selftest-coverage — visible to the registry, not invisible plumbing.
+# `filter-rule-evaluated` is the RULE_TOUCHED guard: a filtered run that never calls
+# ok/fail for the selected rule. It is not META; its red-case deletes its section.
 GATE_RULES=(
   index-path-resolves law-indexed front-matter-id law-has-title duplicate-title
   law-size lazy-load-complete lazy-load-resolves xref-resolves location-coupling
   always-on-size banned-coupling temporal-coupling url-in-law claude-pointer
-  selftest-coverage
-  llms-txt-complete law-count-consistent no-placeholder-coordinates posix-shell-purity
+  selftest-coverage case-rules-registered structure filter-rule-evaluated
+  llms-txt-complete law-count-consistent rule-count-consistent
+  no-placeholder-coordinates posix-shell-purity
   readme-groups-complete english-only product-tier-inert unbraced-nonascii
 )
-GATE_RULES_META=(selftest-coverage)
+GATE_RULES_META=(selftest-coverage structure)
+
+# Optional single-rule execution. Validate before shared corpus setup so a typo can
+# never look like a clean filtered run.
+ONLY_RULE=
+case "${1:-}" in
+  --rule)
+    if [ "$#" -lt 2 ]; then
+      printf 'FAIL [structure] --rule requires a rule id\n' >&2
+      exit 2
+    fi
+    ONLY_RULE=$2
+    shift 2
+    ;;
+  "")
+    ;;
+  *)
+    printf 'FAIL [structure] unknown argument: %s\n' "$1" >&2
+    exit 2
+    ;;
+esac
+if [ "$#" -ne 0 ]; then
+  printf 'FAIL [structure] unexpected argument: %s\n' "$1" >&2
+  exit 2
+fi
+if [ -n "$ONLY_RULE" ]; then
+  _rule_registered=0
+  for _rule in "${GATE_RULES[@]}"; do
+    [ "$_rule" = "$ONLY_RULE" ] && _rule_registered=1
+  done
+  if [ "$_rule_registered" -eq 0 ]; then
+    printf 'FAIL [structure] unknown rule: %s — not in GATE_RULES\n' "$ONLY_RULE" >&2
+    exit 2
+  fi
+fi
+[ -d laws ] && [ -f core/ALWAYS.md ] || { echo "FAIL [structure] repository layout not found" >&2; exit 2; }
 
 MAX_ALWAYS_LINES=250
 MIN_LAW_LINES=12
@@ -46,12 +87,35 @@ MAX_LAW_LINES=90
 
 FAILURES=0
 SECTION_MARK=0
+RULE_TOUCHED=0
 
-fail()    { printf '  FAIL [%s] %s\n' "$1" "$2"; FAILURES=$((FAILURES + 1)); }
-ok()      { printf '  ok   [%s] %s\n' "$1" "$2"; }
+rule_wanted() { [ -z "$ONLY_RULE" ] || [ "$ONLY_RULE" = "$1" ]; }
+section_wanted() {
+  [ -z "$ONLY_RULE" ] && return 0
+  local _candidate
+  for _candidate in "$@"; do
+    rule_wanted "$_candidate" && return 0
+  done
+  return 1
+}
+fail() {
+  if [ -n "$ONLY_RULE" ] && [ "$1" != "$ONLY_RULE" ]; then return 0; fi
+  RULE_TOUCHED=1
+  printf '  FAIL [%s] %s\n' "$1" "$2"
+  FAILURES=$((FAILURES + 1))
+}
+ok() {
+  if [ -n "$ONLY_RULE" ] && [ "$1" != "$ONLY_RULE" ]; then return 0; fi
+  RULE_TOUCHED=1
+  printf '  ok   [%s] %s\n' "$1" "$2"
+}
 section() { printf '\n%s\n' "$1"; SECTION_MARK=$FAILURES; }
 # A green summary may never sit beside a red finding in the same section.
-summary() { [ "$FAILURES" -eq "$SECTION_MARK" ] && ok "$1" "$2"; return 0; }
+summary() {
+  if [ -n "$ONLY_RULE" ] && [ "$1" != "$ONLY_RULE" ]; then return 0; fi
+  [ "$FAILURES" -eq "$SECTION_MARK" ] && ok "$1" "$2"
+  return 0
+}
 
 # Distributed corpus: the files a consumer installs. These must stay hermetic and
 # vendor-neutral. README.md, INSTALL.md, MAINTENANCE.md, CHANGELOG.md and scripts/ are
@@ -79,6 +143,7 @@ EOF
 LAW_COUNT=${#LAW_FILES[@]}
 
 # --- 1. index integrity -------------------------------------------------------
+if section_wanted index-path-resolves law-indexed; then
 section "index integrity"
 INDEX_PATHS=$(grep -oE '`laws/[a-z0-9-]+\.md`' laws/INDEX.md | tr -d '`' | sort -u)
 if [ -z "$INDEX_PATHS" ]; then
@@ -96,8 +161,10 @@ for f in "${LAW_FILES[@]}"; do
   grep -qF "\`$id\`" laws/INDEX.md        || fail law-indexed "$f — id not listed in laws/INDEX.md"
 done
 summary law-indexed "$LAW_COUNT laws present in the index"
+fi
 
 # --- 2. law file integrity ----------------------------------------------------
+if section_wanted front-matter-id law-has-title law-size duplicate-title; then
 section "law files"
 TITLES=""
 for f in "${LAW_FILES[@]}"; do
@@ -133,8 +200,10 @@ if [ -n "$DUPES" ]; then
 else
   ok duplicate-title "all law titles are distinct"
 fi
+fi
 
 # --- 3. lazy-load table -------------------------------------------------------
+if section_wanted lazy-load-complete lazy-load-resolves; then
 section "lazy-load table"
 TABLE_IDS=$(grep -oE 'agent-laws/laws/[a-z0-9-]+\.md' core/ALWAYS.md | sed 's#.*/##; s#\.md$##' | sort -u)
 for f in "${LAW_FILES[@]}"; do
@@ -148,10 +217,12 @@ while IFS= read -r id; do
   [ -f "laws/$id.md" ] || fail lazy-load-resolves "core/ALWAYS.md — load table points at a non-existent law: $id"
 done <<< "$TABLE_IDS"
 summary lazy-load-resolves "$(wc -l <<< "$TABLE_IDS" | tr -d ' ') load-table rows resolve"
+fi
 
 # --- 4. cross-references and location independence ----------------------------
 # Laws reference each other by stable id, never by path or filename: the corpus must
 # survive being installed under any directory layout.
+if section_wanted xref-resolves location-coupling; then
 section "cross-references"
 for f in "${LAW_FILES[@]}"; do
   while IFS= read -r id; do
@@ -174,8 +245,10 @@ for f in "${LAW_FILES[@]}"; do
 done
 summary xref-resolves "all law-to-law references resolve"
 summary location-coupling "no law hardcodes a file path"
+fi
 
 # --- 5. always-on size budget -------------------------------------------------
+if section_wanted always-on-size; then
 section "always-on size budget (<= $MAX_ALWAYS_LINES lines)"
 for f in core/ALWAYS.md AGENTS.md; do
   [ -f "$f" ] || { fail always-on-size "$f — missing"; continue; }
@@ -184,10 +257,12 @@ for f in core/ALWAYS.md AGENTS.md; do
   [ "$n" -gt "$MAX_ALWAYS_LINES" ] && fail always-on-size "$f — $n lines (budget $MAX_ALWAYS_LINES)"
 done
 summary always-on-size "always-on files within budget ($(wc -l < core/ALWAYS.md | tr -d ' ') / $(wc -l < AGENTS.md | tr -d ' ') lines)"
+fi
 
 # --- 6. hermeticity of the distributed corpus ---------------------------------
 # Category patterns, never a curated list of product names: a denylist of vendors would
 # itself be the name-keyed short blanket that law `attack-root-class` forbids.
+if section_wanted banned-coupling temporal-coupling url-in-law; then
 section "hermeticity"
 BANNED_COUPLING=(
   'GEMINI\.md@@a tool-specific instruction file that is out of scope'
@@ -243,8 +318,10 @@ for f in "${LAW_FILES[@]}"; do
   done < <(grep -nE 'https?://' "$f")
 done
 summary url-in-law "$LAW_COUNT laws are self-contained"
+fi
 
 # --- 7. compatibility layer stays a pointer -----------------------------------
+if section_wanted claude-pointer; then
 section "compatibility layer"
 if [ -L CLAUDE.md ]; then
   ok claude-pointer "CLAUDE.md is a symlink -> $(readlink CLAUDE.md)"
@@ -259,12 +336,15 @@ elif [ -f CLAUDE.md ]; then
 else
   fail claude-pointer "CLAUDE.md — missing"
 fi
+fi
 
 # --- 8. the gate cannot be silently weakened ----------------------------------
+if section_wanted selftest-coverage case-rules-registered; then
 section "gate self-coverage"
 SELFTEST=scripts/selftest-gate.sh
 if [ ! -f "$SELFTEST" ]; then
   fail selftest-coverage "$SELFTEST — missing; the gate has no red-cases and proves nothing"
+  fail case-rules-registered "$SELFTEST — missing; cannot validate case rule names"
 else
   uncovered=0
   for rule in "${GATE_RULES[@]}"; do
@@ -272,11 +352,37 @@ else
     grep -qF "case_ $rule " "$SELFTEST" || { fail selftest-coverage "$SELFTEST — no red-case for rule: $rule"; uncovered=1; }
   done
   [ "$uncovered" -eq 0 ] && ok selftest-coverage "${#GATE_RULES[@]} rules declared, all non-meta rules have a red-case"
+
+  unknown_cases=0
+  while IFS= read -r case_rule; do
+    [ -n "$case_rule" ] || continue
+    case_registered=0
+    for declared_rule in "${GATE_RULES[@]}"; do
+      [ "$declared_rule" = "$case_rule" ] && case_registered=1
+    done
+    if [ "$case_registered" -eq 0 ]; then
+      fail case-rules-registered "$SELFTEST — case_ names a rule not in GATE_RULES: $case_rule"
+      unknown_cases=1
+    fi
+  done <<EOF
+$(awk '$1 == "case_" { print ($2 == "" ? "<missing>" : $2) }' "$SELFTEST")
+EOF
+  [ "$unknown_cases" -eq 0 ] && ok case-rules-registered "every real selftest case names a registered rule"
+fi
+fi
+
+# --- 8b. filtered runs must evaluate the selected rule ------------------------
+# Presence marker for the red-case: deleting this section while leaving the id in
+# GATE_RULES makes --rule filter-rule-evaluated exit 2 via RULE_TOUCHED below.
+if section_wanted filter-rule-evaluated; then
+section "filter rule evaluation"
+ok filter-rule-evaluated "a filtered run touches ok or fail for the selected rule"
 fi
 
 # --- 9. parallel routing surfaces stay bijective ------------------------------
 # laws/INDEX.md is the source of truth. core/ALWAYS.md is guarded above.
 # llms.txt is a third writer over the same set of ids — keep the bijection.
+if section_wanted llms-txt-complete; then
 section "llms.txt routing completeness"
 if [ ! -f llms.txt ]; then
   fail llms-txt-complete "llms.txt — missing"
@@ -294,10 +400,12 @@ else
   done <<< "$LLMS_IDS"
   summary llms-txt-complete "$LAW_COUNT laws bijective with llms.txt"
 fi
+fi
 
 # --- 10. live law-count literals stay honest ----------------------------------
 # The count is hardcoded on four live surfaces. CHANGELOG.md is excluded: historical
 # release notes correctly name past counts and must not be rewritten when the corpus grows.
+if section_wanted law-count-consistent; then
 section "law count consistency"
 COUNT_SURFACES=(laws/INDEX.md README.md AGENTS.md llms.txt)
 # Class: an integer asserted as the corpus size — a number, then at most four
@@ -319,10 +427,40 @@ for f in "${COUNT_SURFACES[@]}"; do
   done < <(grep -nE "$COUNT_NUM_THEN_LAWS" "$f")
 done
 [ "$count_mismatches" -eq 0 ] && summary law-count-consistent "live count literals equal disk ($LAW_COUNT)"
+fi
+
+# --- 10b. live rule-count literals match the registry -------------------------
+# README.md and AGENTS.md assert the registered-rule count in prose. CHANGELOG.md
+# is excluded: historical release notes correctly name past counts.
+RULE_COUNT=${#GATE_RULES[@]}
+if section_wanted rule-count-consistent; then
+section "rule count consistency"
+RULE_COUNT_SURFACES=(README.md AGENTS.md)
+# Class: an integer asserted as the registry size — a number, then at most four
+# adjective tokens, then the word rule/rules. Caps the gap so "step 4… a rule"
+# and line-budget numbers do not count, while "28 registered rules" still does.
+RULE_COUNT_NUM_THEN_RULES='\b([0-9]+)([[:space:]]+[[:alpha:],-]{1,40}){0,4}[[:space:]]+rules?\b'
+rule_count_mismatches=0
+for f in "${RULE_COUNT_SURFACES[@]}"; do
+  [ -f "$f" ] || { fail rule-count-consistent "$f — missing count surface"; continue; }
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    line=${hit%%:*}; text=${hit#*:}
+    asserted=$(printf '%s\n' "$text" | grep -oE "$RULE_COUNT_NUM_THEN_RULES" | head -1 | grep -oE '[0-9]+' | head -1)
+    [ -n "$asserted" ] || continue
+    if [ "$asserted" -ne "$RULE_COUNT" ]; then
+      fail rule-count-consistent "$f:$line — asserts $asserted rules; registry has $RULE_COUNT"
+      rule_count_mismatches=1
+    fi
+  done < <(grep -nE "$RULE_COUNT_NUM_THEN_RULES" "$f")
+done
+[ "$rule_count_mismatches" -eq 0 ] && summary rule-count-consistent "live rule-count literals equal registry ($RULE_COUNT)"
+fi
 
 # --- 11. published coordinates are resolved -----------------------------------
 # Closed class: the install-path placeholder. The needle is assembled at runtime with
 # printf so the gate does not match itself; nothing is excluded on the gate's behalf.
+if section_wanted no-placeholder-coordinates; then
 section "published coordinates"
 PLACEHOLDER=$(printf '%s/%s' OWNER REPO)
 placeholder_hits=0
@@ -332,6 +470,7 @@ while IFS= read -r hit; do
   placeholder_hits=1
 done < <(grep -rnF --exclude-dir=.git --exclude-dir=dist "$PLACEHOLDER" . 2>/dev/null || true)
 [ "$placeholder_hits" -eq 0 ] && ok no-placeholder-coordinates "no unresolved install-path placeholder"
+fi
 
 # --- 12. tooling shell purity -------------------------------------------------
 # Two floors, one rule id:
@@ -339,6 +478,7 @@ done < <(grep -rnF --exclude-dir=.git --exclude-dir=dist "$PLACEHOLDER" . 2>/dev
 #   - Every script must stay on bash 3.2 + POSIX utilities (no bash-4-only, no GNU-only).
 # The posix over-match twin proves POSIX-legal lookalikes stay silent; the tooling
 # twin proves a documented/forbidden name inside a comment stays silent.
+if section_wanted posix-shell-purity; then
 section "tooling shell purity"
 # Bashisms forbidden in sh scripts. Each alternative has a red-case.
 POSIX_BASH_ONLY='\$\{[A-Za-z_][A-Za-z0-9_]*//|\[\[([^:]|$)|<<<|\+=\(|\bmapfile\b|\bdeclare -[aA]|\blocal -[aA]'
@@ -378,10 +518,12 @@ $(grep -nE "$TOOLING_FORBIDDEN" "$f" || true)
 EOF
 done
 [ "$posix_hits" -eq 0 ] && ok posix-shell-purity "tooling scripts stay on bash 3.2 + POSIX utilities"
+fi
 
 # --- 13. README group table stays bijective -----------------------------------
 # Same second-writer failure class as llms.txt: the group table must list every law
 # exactly once, and every listed id must resolve.
+if section_wanted readme-groups-complete; then
 section "README group table"
 if [ ! -f README.md ]; then
   fail readme-groups-complete "README.md — missing"
@@ -409,6 +551,7 @@ $README_UNIQ
 EOF
   summary readme-groups-complete "$LAW_COUNT laws bijective with the README group table"
 fi
+fi
 
 # --- 14. American English orthography -----------------------------------------
 # Catches accented prose the moment it lands (non-ASCII letters). Does NOT catch
@@ -422,6 +565,7 @@ fi
 # Strip allowlisted UTF-8 byte sequences with sed, then detect leftover non-ASCII with
 # grep under LC_ALL=C (bytes >= 0x80 are not [[:print:]]). No awk — mawk is not
 # multi-byte aware and would make this a dead rule on Ubuntu runners.
+if section_wanted english-only; then
 section "english-only orthography"
 english_hits=0
 while IFS= read -r f; do
@@ -443,6 +587,7 @@ $(find . -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.txt' -o -name '*.s
   ! -path './.git/*' ! -path './dist/*' | sort)
 EOF
 [ "$english_hits" -eq 0 ] && ok english-only "no non-ASCII letters outside the typographic allowlist"
+fi
 
 # --- 15. unbraced expansion immediately before a non-ASCII byte ----------------
 # Bash 3.2 absorbs a following non-ASCII byte into the parameter name (unbraced
@@ -451,6 +596,7 @@ EOF
 # Detection is byte-exact under LC_ALL=C: map high bytes to ASCII at-signs, then
 # find an unbraced dollar-IDENT immediately before an at-sign. Comment lines are
 # skipped so documentation may name the construct.
+if section_wanted unbraced-nonascii; then
 section "unbraced expansion before non-ASCII"
 unbraced_hits=0
 for f in scripts/*.sh; do
@@ -471,12 +617,14 @@ $(LC_ALL=C tr '\200-\377' '@' < "$f" | LC_ALL=C grep -nE '\$[A-Za-z_][A-Za-z0-9_
 EOF
 done
 [ "$unbraced_hits" -eq 0 ] && ok unbraced-nonascii "no unbraced \$VAR sits before a non-ASCII byte"
+fi
 
 # --- 16. product tier stays inert ---------------------------------------------
 # Contract is about what is COMMITTED, not what a particular filesystem reports.
 # Read mode bits from git's index (identical on every platform):
 #   100644 regular file, 100755 executable, 120000 symlink.
 # git is a tooling-tier dependency for this rule (already required to obtain the repo).
+if section_wanted product-tier-inert; then
 section "product tier inert"
 inert_hits=0
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -503,12 +651,28 @@ $(git ls-files -s -- core laws adapters templates llms.txt 2>/dev/null)
 EOF
 fi
 [ "$inert_hits" -eq 0 ] && ok product-tier-inert "product tier index has no symlinks and no executable bits"
+fi
 
 # --- result -------------------------------------------------------------------
 printf '\n'
+# RULE_TOUCHED: sharpens diagnosis when a registered rule's evaluation section is
+# missing under --rule. Without this guard the same defect still surfaces as DEAD RULE
+# in the selftest; this exit names the wiring failure directly.
+if [ -n "$ONLY_RULE" ] && [ "$RULE_TOUCHED" -eq 0 ]; then
+  printf 'FAIL [filter-rule-evaluated] rule %s was not evaluated — filter wiring bug\n' "$ONLY_RULE" >&2
+  exit 2
+fi
 if [ "$FAILURES" -eq 0 ]; then
-  printf 'check-laws: PASS — %s laws, %s rules, corpus v%s\n' "$LAW_COUNT" "${#GATE_RULES[@]}" "$(cat VERSION)"
+  if [ -n "$ONLY_RULE" ]; then
+    printf 'check-laws: PASS — rule [%s]\n' "$ONLY_RULE"
+  else
+    printf 'check-laws: PASS — %s laws, %s rules, corpus v%s\n' "$LAW_COUNT" "${#GATE_RULES[@]}" "$(cat VERSION)"
+  fi
   exit 0
 fi
-printf 'check-laws: FAIL — %s finding(s)\n' "$FAILURES"
+if [ -n "$ONLY_RULE" ]; then
+  printf 'check-laws: FAIL — rule [%s], %s finding(s)\n' "$ONLY_RULE" "$FAILURES"
+else
+  printf 'check-laws: FAIL — %s finding(s)\n' "$FAILURES"
+fi
 exit 1

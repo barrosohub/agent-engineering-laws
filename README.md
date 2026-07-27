@@ -177,7 +177,7 @@ corpus — each with its counter.
 
 | Script | Role | Blocks? |
 |---|---|---|
-| `scripts/check-laws.sh` | 24 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
+| `scripts/check-laws.sh` | 28 rules over index integrity, routing, hermeticity, temporal coupling, size budgets | **yes** |
 | `scripts/selftest-gate.sh` | Proves every rule fires on its own violation, and that none fire on a clean corpus | **yes** |
 | `scripts/audit-corpus.sh` | Advisory signals: overlap, vocabulary drift, imperative decay | no |
 
@@ -187,7 +187,9 @@ and **cannot be weakened silently**: every rule is registered, every registered 
 a red-case, and deleting a rule requires deleting its red-case in the same visible act.
 
 Findings are machine-readable — `FAIL [<rule-id>] <location> — <reason>`. Parse the bracketed
-id, never the prose.
+id, never the prose. Pass `--rule <id>` to run one registered rule; an unknown id exits 2
+instead of silently passing. `case-rules-registered` also checks that every real selftest
+case names a registered rule.
 
 ```sh
 scripts/check-laws.sh && scripts/selftest-gate.sh   # must both exit 0
@@ -220,7 +222,8 @@ GitHub Pages serves the machine-readable entry point at
 ## Versioning
 
 **major** — a law id is renamed, retired, or reverses its guidance; a constitutional
-invariant changes. **minor** — a law is added or materially changed; a gate rule is added.
+invariant changes. **minor** — a law is added or materially changed; a gate rule is added;
+any change to the set of rule ids the gate can emit (ids are a parsed contract).
 **patch** — wording and clarifications that change no requirement.
 
 Every major release carries an old-id → new-id mapping in [`CHANGELOG.md`](CHANGELOG.md).
