@@ -29,6 +29,12 @@ Turn the incident into the law:
 - Incident: "the retry loop double-sent a message on timeout."
 - Law: "close visible state on every exit path, including timeout."
 
+## Auditable store
+
+Durable knowledge an agent depends on as a standing rule MUST live where a human can
+read it, see what changed in it, and correct it. Do NOT promote knowledge to a standing
+rule from a store the human cannot inspect or correct.
+
 ## Process discipline
 
 - If the environment provides structured engineering skills — plan grilling, TDD, two-axis

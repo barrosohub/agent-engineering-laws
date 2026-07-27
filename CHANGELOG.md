@@ -14,46 +14,135 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   parsed contract (consumers parse `FAIL [<rule-id>]`).
 - **patch** — clarifications, wording, typos, index and formatting fixes.
 
+A version number is consumed by the **release act** — the annotated tag on the
+distribution branch — never by a working-tree edit. Until that tag exists, all changes
+accumulate under the single next version, and every bump judgement measures against the
+last released version.
+
 Law ids are a contract. Do not rename one without a major bump and a mapping entry.
 Gate rule ids are also a contract: any change to the emit-able set is at least minor.
 
 ## [Unreleased]
 
-## [1.5.0] - 2026-07-26
+## [1.6.0] - 2026-07-26
 
-Theme: register structural filter guards, lock rule-count literals, and end the patch-vs-minor
-ambiguity on emit-able gate rule ids.
+Theme: admit request-ambiguity discipline, keep durable memory auditable, and bind the
+changelog to VERSION and to the tag history so the release record can no longer describe
+releases that never happened.
 
 ### Added
 
-- Gate rule `structure` (META) and `filter-rule-evaluated` so FAIL [structure] early exits and
-  RULE_TOUCHED are registry-visible; `filter-rule-evaluated` has a red-case that deletes its
-  evaluation section under `--rule`. Accurate scope for RULE_TOUCHED: sharpens diagnosis —
-  the same hole still surfaces as DEAD RULE without it.
-- Gate rule `rule-count-consistent` compares live rule-count literals in `README.md` and
-  `AGENTS.md` to `${#GATE_RULES[@]}`. Historical changelog counts are excluded. Twin proves
-  silence on law counts, line budgets, and a number near "rule" that does not assert registry
-  size.
+- Law `resolve-ambiguity-first` (33 → 34). When a request admits more than one reading and
+  the readings lead to materially different work, name the ambiguity and assume or ask
+  BEFORE producing the work; retroactive disclosure in the wrap-up is a violation, and a
+  fork discovered mid-work is handled exactly as at the start — stop building, name it,
+  then assume or ask. Noticing late costs nothing; not looking is the violation. Routine
+  calls stay free only while the other choice would not change the deliverable. Forced by:
+  an observed recurring failure class — an agent silently picks one reading of an
+  underspecified request, ships the wrong deliverable, and discloses the fork only in the
+  summary; a review of two external bodies of practice confirmed no law owned the contract.
+  Closest law is `questions-are-not-commands` (authorization of irreversible action) — a
+  different contract; its ambiguity clause is now scoped to authorization and cites this
+  law for request ambiguity, so the two partition the territory. **Not mechanizable:** no
+  gate rule can detect an unstated assumption; the rule count is unchanged by this law.
+- Gate rule `changelog-version-bound` (28 → 29): the highest `## [X.Y.Z]` heading in
+  `CHANGELOG.md` equals `VERSION` and no heading exceeds it. Version comparison is POSIX
+  awk, field by field — `sort -V` is GNU-only and BusyBox sort degrades to lexicographic
+  silently. Forced by: the record carried entries for versions no commit ever had.
+- `scripts/verify-changelog-tags.sh`: every `[X.Y.Z]` link definition must resolve to an
+  annotated tag whose committed `VERSION` reads X.Y.Z, every released heading must have
+  its tag (the reverse direction, so an entry cannot sit in the record with neither link
+  nor tag), and the `[Unreleased]` compare base must name an existing tag. Two derived
+  exemptions, neither keyed to a name: the heading equal to the tree's VERSION (the
+  in-flight release) and headings older than the VERSION at the root commit (predate the
+  repository's history). Outside the gate on purpose — selftest subjects are single-commit
+  trees with no tags. Runs as its own CI job with tags explicitly fetched; unfetched tags
+  would make it pass vacuously.
+- `scripts/create-release-tag.sh`: deterministic annotated release tag from repository
+  state. Refuses a dirty tree and validates HEAD — the object the tag names — not the
+  working tree; refuses off the distribution branch (`DISTRIBUTION_BRANCH` overrides for
+  validation only, documented in the header); checks local AND remote tags, warning
+  explicitly when the remote is unreachable instead of skipping silently; derives the
+  message from the changelog Theme including wrapped continuation lines; STOPS before
+  pushing — publishing needs the human imperative (`git-safety`).
+- Release sequence documented in `MAINTENANCE.md` as a numbered procedure, including the
+  post-tag bookkeeping step: the `[X.Y.Z]` link is added only after its tag is published
+  (the verifier fails any commit whose links name a missing tag), starts on `develop` like
+  every change, and consumes no version number.
 
 ### Changed
 
-- Minor bump `1.4.0` → `1.5.0` (25 → 28 registered ids). One failure moved from `[structure]`
-  to `[filter-rule-evaluated]`; two prior ids plus `rule-count-consistent` are new emit-able
-  ids. Single bump covers this whole set — do not bump twice for the count rule.
-- Versioning policy sharpened (CHANGELOG, `MAINTENANCE.md`, `README.md`, `AGENTS.md`): any
-  change to the set of rule ids the gate can emit is at least a minor bump, because those ids
-  are a parsed output contract. Forced by: this exact judgement was contested (patch reading
-  vs minor reading); the minor reading won.
+- `long-term-memory`: durable knowledge relied on as a standing rule MUST live where a
+  human can read it, see what changed in it, and correct it; do NOT promote knowledge to a
+  standing rule from a store the human cannot inspect or correct. Same contract the law
+  already owned — extended rather than admitting a parallel law.
+- `scope-discipline`: verification cadence — never stack an unverified change on another
+  unverified change; run the available check between them; cites `operational-evidence` as
+  the claim-time counterpart. Q4 judgement, recorded: routing wins — this law loads while
+  executing a change, which is when cadence matters; `operational-evidence` loads at claim
+  time.
+- `questions-are-not-commands`: the ambiguity clause is scoped to authorization ambiguity
+  and cites `resolve-ambiguity-first` for request ambiguity.
+- Versioning policy: a version number is consumed by the release act — the annotated tag
+  on the distribution branch — never by a working-tree edit. Until that tag exists, changes
+  accumulate under the single next version, and bump judgement measures against the last
+  released version. Forced by: two record entries described versions that never shipped
+  (a 1.4.0 section, and a 1.6.0 entry written before its work existed), and two more
+  numbers (1.4.1, 1.7.0) were consumed by working-tree edits and had to be folded back.
+- Branch contract: the direction is absolute — every change starts on `develop`, `main`
+  receives commits only by promotion, and the only ref created on `main` is the release
+  tag itself.
+
+### Rejected (admission test; likely to recur)
+
+- Narrow-interface / deep-module design — fails Q4; `never-parallel-contract` already forbids
+  a wrapper without a contract boundary, which is this rule in miniature.
+- Shared or ubiquitous domain terminology — fails Q4; already distributed across
+  `domain-canonical-sources`, `attack-root-class`, and `new-legacy-boundary`.
+- Per-session architectural investment budget — fails Q5 (no concrete forbidden action; an
+  essay). The corpus answers this class through `mechanical-guardrails` instead.
+- Session-handoff mechanics — product architecture, not law. Universal parts already held by
+  `rule-authoring`, `lifecycle-concurrency`, and the always-on file.
+- Compiling durable pages from captured observations rather than retrieving raw history —
+  a memory product's internal design; adopting it would couple the corpus to an architecture
+  (AGENTS.md hard rule 5).
 
 ### Verified
 
-- Five frozen selftests: identical `PASS — 54 checks` (delta from prior 52: +1 red-case and
-  +1 twin for `rule-count-consistent`). `check-laws` 28 rules, audit and render green;
-  `laws/` byte-identical to HEAD.
+- `check-laws`: PASS — 34 laws, 29 rules, corpus v1.6.0.
+- Five consecutive selftests: identical `PASS — 56 checks` (delta from 54: +1 red-case and
+  +1 twin for `changelog-version-bound`).
+- `verify-changelog-tags` on the real repository: PASS — 5 links resolved, the in-flight
+  1.6.0 heading skipped as the tree version, 1.0.0 skipped as predating the root commit
+  (VERSION=1.1.0 there), `[Unreleased]` base confirmed against tag v1.5.0. Red-tested in a
+  scratch clone: a phantom `[9.8.7]` link FAILS; a released heading with neither link nor
+  tag FAILS on the reverse direction; an `[Unreleased]` base naming a non-tag FAILS.
+- `create-release-tag.sh` refusals, each executed and observed: dirty working tree; wrong
+  branch; malformed target; tag already present locally; tag absent locally but present on
+  origin. No tag was created by any run. Multi-line Theme extraction verified against a
+  wrapped fixture.
+- `changelog-version-bound` twin-alive: flipping the twin mutation to a `## [9.9.9]`
+  heading yields `OVER-MATCH`.
+- `render-core` and `actionlint` clean.
+- `laws/` in this release: one law added (`resolve-ambiguity-first`), three laws edited
+  (`long-term-memory`, `scope-discipline`, `questions-are-not-commands`), plus the required
+  `laws/INDEX.md` routing row. Every other law file is byte-identical to the 1.5.0 tag.
 
-## [1.4.0] - 2026-07-26
+### Reviewed
 
-Theme: make individual gate rules runnable and make selftest registration bidirectional.
+An independent second reader examined the wording, the two scripts, and every factual claim
+in this entry against the tree, and returned HOLD. Three blockers were fixed before release:
+`create-release-tag.sh` validated the working tree while tagging HEAD — the tool built to end
+phantom versions could itself have minted a tag whose `VERSION` contradicted its own changelog
+link; the release sequence assumed a clean tree the script never checked; and this Verified
+block asserted that `laws/` was unchanged, which was false. A separate corpus audit produced
+findings against pre-existing laws; those are triaged for later releases rather than folded in
+here, so this entry records only what shipped.
+
+## [1.5.0] - 2026-07-26
+
+Theme: register structural filter guards, lock rule-count literals, and end the patch-vs-minor
+ambiguity on emit-able gate rule ids. Absorbs the unreleased 1.4.0 phantom (never tagged).
 
 ### Added
 
@@ -63,7 +152,14 @@ Theme: make individual gate rules runnable and make selftest registration bidire
   implementations.
 - Gate rule `case-rules-registered` (24 → 25) rejects any real `case_` line in the selftest
   whose id is absent from `GATE_RULES`; its twin proves commented examples stay silent.
-  Forced by: one-way selftest coverage could miss an unregistered red-case.
+- Gate rule `structure` (META) and `filter-rule-evaluated` so FAIL [structure] early exits and
+  RULE_TOUCHED are registry-visible; `filter-rule-evaluated` has a red-case that deletes its
+  evaluation section under `--rule`. Accurate scope for RULE_TOUCHED: sharpens diagnosis —
+  the same hole still surfaces as DEAD RULE without it.
+- Gate rule `rule-count-consistent` compares live rule-count literals in `README.md` and
+  `AGENTS.md` to `${#GATE_RULES[@]}`. Historical changelog counts are excluded. Twin proves
+  silence on law counts, line budgets, and a number near "rule" that does not assert registry
+  size.
 - `workflow_dispatch` runs the scheduled three-OS selftest on demand, including the Windows
   product-tier symlink prediction.
 
@@ -71,15 +167,25 @@ Theme: make individual gate rules runnable and make selftest registration bidire
 
 - `MAINTENANCE.md` now requires validation on `develop` across three operating systems before
   promotion to `main`, which is the raw-URL, installer, and GitHub Pages distribution branch.
+- Minor bump measured from last release through this shipped set (25 → 28 registered ids).
+  One failure moved from `[structure]` to `[filter-rule-evaluated]`; `case-rules-registered`,
+  `structure`, `filter-rule-evaluated`, and `rule-count-consistent` land in one release.
+  Single bump — do not bump twice for the count rule.
+- Versioning policy sharpened (CHANGELOG, `MAINTENANCE.md`, `README.md`, `AGENTS.md`): any
+  change to the set of rule ids the gate can emit is at least a minor bump, because those ids
+  are a parsed output contract. Forced by: this exact judgement was contested (patch reading
+  vs minor reading); the minor reading won.
 
 ### Verified
 
 - Selftest wall-clock: before filter ~117–146s (3 runs); after ~45–53s (3 runs); freeze five
-  consecutive PASS at 51 checks with identical summaries.
+  consecutive PASS at 51 then 54 checks with identical summaries as the batch grew.
 - Dead-rule proof: gutting `english-only` yields `DEAD RULE [english-only]` under `--rule`.
 - Unknown `--rule` exits 2 naming the id; an unregistered `case_` fails `case-rules-registered`.
 - Twin-alive: flipping the `case-rules-registered` twin mutation to a real `case_` yields
   `OVER-MATCH`. `actionlint` clean on `.github/workflows/gates.yml`.
+- Five frozen selftests at the final 1.5.0 surface: identical `PASS — 54 checks`;
+  `check-laws` 28 rules; audit and render green.
 
 ## [1.3.0] - 2026-07-26
 
@@ -348,7 +454,6 @@ start of the corpus; do not invent a tag.
 
 [Unreleased]: https://github.com/barrosohub/agent-engineering-laws/compare/v1.5.0...HEAD
 [1.5.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.5.0
-[1.4.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.4.0
 [1.3.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.3.0
 [1.2.1]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.1
 [1.2.0]: https://github.com/barrosohub/agent-engineering-laws/releases/tag/v1.2.0

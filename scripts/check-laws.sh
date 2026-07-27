@@ -40,7 +40,7 @@ GATE_RULES=(
   law-size lazy-load-complete lazy-load-resolves xref-resolves location-coupling
   always-on-size banned-coupling temporal-coupling url-in-law claude-pointer
   selftest-coverage case-rules-registered structure filter-rule-evaluated
-  llms-txt-complete law-count-consistent rule-count-consistent
+  llms-txt-complete law-count-consistent rule-count-consistent changelog-version-bound
   no-placeholder-coordinates posix-shell-purity
   readme-groups-complete english-only product-tier-inert unbraced-nonascii
 )
@@ -455,6 +455,64 @@ for f in "${RULE_COUNT_SURFACES[@]}"; do
   done < <(grep -nE "$RULE_COUNT_NUM_THEN_RULES" "$f")
 done
 [ "$rule_count_mismatches" -eq 0 ] && summary rule-count-consistent "live rule-count literals equal registry ($RULE_COUNT)"
+fi
+
+# --- 10c. changelog version headings bound to VERSION ------------------------
+# Pure in-tree: highest ## [X.Y.Z] heading equals VERSION; none may exceed it.
+# Link definitions and prose version literals are out of scope (see twin).
+if section_wanted changelog-version-bound; then
+section "changelog version bound"
+CHANGELOG=CHANGELOG.md
+VERSION_FILE=VERSION
+if [ ! -f "$CHANGELOG" ]; then
+  fail changelog-version-bound "$CHANGELOG — missing"
+elif [ ! -f "$VERSION_FILE" ]; then
+  fail changelog-version-bound "$VERSION_FILE — missing"
+else
+  declared_version=$(tr -d '[:space:]' < "$VERSION_FILE")
+  heading_versions=$(grep -E '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' "$CHANGELOG" \
+    | sed -E 's/^## \[([0-9]+\.[0-9]+\.[0-9]+)\].*/\1/' || true)
+  if [ -z "$heading_versions" ]; then
+    fail changelog-version-bound "$CHANGELOG — no ## [X.Y.Z] version headings"
+  else
+    # Numeric field-by-field compare in POSIX awk. sort -V is GNU-only — BusyBox sort
+    # lacks it and degrades to lexicographic silently, which would let 1.10.0 hide
+    # below 1.9.0. Returns 0 when $1 is strictly greater than $2.
+    ver_gt() {
+      awk -v a="$1" -v b="$2" 'BEGIN {
+        na = split(a, A, "."); nb = split(b, B, ".")
+        n = (na > nb) ? na : nb
+        for (i = 1; i <= n; i++) {
+          x = (i <= na) ? A[i] + 0 : 0; y = (i <= nb) ? B[i] + 0 : 0
+          if (x > y) exit 0
+          if (x < y) exit 1
+        }
+        exit 1
+      }'
+    }
+    bound_hits=0
+    highest=
+    while IFS= read -r hv; do
+      [ -n "$hv" ] || continue
+      if ver_gt "$hv" "$declared_version"; then
+        fail changelog-version-bound "$CHANGELOG — heading [$hv] exceeds VERSION $declared_version"
+        bound_hits=1
+      fi
+      if [ -z "$highest" ] || ver_gt "$hv" "$highest"; then
+        highest=$hv
+      fi
+    done <<EOF
+$heading_versions
+EOF
+    if [ "$bound_hits" -eq 0 ]; then
+      if [ "$highest" != "$declared_version" ]; then
+        fail changelog-version-bound "$CHANGELOG — highest heading [$highest] != VERSION $declared_version"
+      else
+        ok changelog-version-bound "highest heading equals VERSION ($declared_version)"
+      fi
+    fi
+  fi
+fi
 fi
 
 # --- 11. published coordinates are resolved -----------------------------------
